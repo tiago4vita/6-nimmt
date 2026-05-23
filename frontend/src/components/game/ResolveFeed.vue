@@ -19,7 +19,7 @@ function playerName(players: PlayerPublic[], playerId: string): string {
       <li
         v-for="(play, index) in plays"
         :key="`${play.playerId}-${play.card.id}-${index}`"
-        class="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2"
+        class="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2 resolve-feed-item"
         :style="{ animationDelay: `${index * 80}ms` }"
       >
         <div class="min-w-0">

@@ -225,6 +225,33 @@ async def join_room(
     return fresh
 
 
+async def update_seated_display_name(
+    *,
+    guest_id: str,
+    display_name: str,
+    client: Redis | None = None,
+) -> GameRoomState | None:
+    """Update the seated player's display name in their current room, if any."""
+    cleaned = validate_display_name(display_name)
+    redis = client or redis_keys.get_client()
+    room_id = await redis.get(redis_keys.guest_current_room_key(guest_id))
+    if room_id is None:
+        return None
+
+    async with room_lock(room_id):
+        room = await load_room(room_id, client=client)
+        if room is None:
+            return None
+        player = room.player_by_guest_id(guest_id)
+        if player is None:
+            return None
+        player.display_name = cleaned
+        await save_room(room, client=client)
+
+    await _publish_room(room)
+    return room
+
+
 async def leave_room(
     *,
     room_id: str,

@@ -5,6 +5,7 @@ import type { Card } from '@/graphql/types'
 const props = defineProps<{
   card: Card
   selected?: boolean
+  submitted?: boolean
   disabled?: boolean
   size?: 'sm' | 'md'
 }>()
@@ -26,6 +27,7 @@ const sizeClass = computed(() => (props.size === 'sm' ? 'h-14 w-10 text-sm' : 'h
       hueClass,
       sizeClass,
       selected ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface' : '',
+      submitted ? 'ring-2 ring-success/70 ring-offset-2 ring-offset-surface' : '',
       disabled ? 'cursor-not-allowed opacity-50' : 'hover:-translate-y-0.5',
     ]"
   >

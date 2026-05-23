@@ -25,7 +25,7 @@ const {
   rows,
   myPlayerId,
   isLoading,
-  isSubscriptionConnected,
+  isReconnecting,
 } = useGameRoom(toRef(props, 'roomId'))
 
 watch(
@@ -45,7 +45,7 @@ watch(
 
 <template>
   <AppShell>
-    <ReconnectBanner :visible="!isSubscriptionConnected && !isLoading" />
+    <ReconnectBanner :visible="isReconnecting && !isLoading" />
 
     <div v-if="isLoading" class="flex min-h-[40vh] items-center justify-center text-sm text-muted">
       Loading results…

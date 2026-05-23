@@ -1,7 +1,8 @@
-import { computed, ref, watch, type MaybeRef, toRef } from 'vue'
+import { computed, onUnmounted, ref, watch, type MaybeRef, toRef } from 'vue'
 import { useMutation, useQuery, useSubscription } from '@urql/vue'
 
 import { useGuestSession } from '@/composables/useGuestSession'
+import { onWsReconnected, wsConnected, wsReconnecting } from '@/graphql/client'
 import {
   LEAVE_ROOM,
   MY_GAME_VIEW,
@@ -56,6 +57,16 @@ export function useGameRoom(roomId: MaybeRef<string>) {
     { immediate: true },
   )
 
+  const stopReconnectListener = onWsReconnected(() => {
+    if (roomIdRef.value && isReady.value) {
+      void refetchView()
+    }
+  })
+
+  onUnmounted(() => {
+    stopReconnectListener()
+  })
+
   const room = computed(() => view.value?.room ?? null)
   const myHand = computed(() => view.value?.myHand ?? [])
   const mySubmittedCard = computed(() => view.value?.mySubmittedCard ?? null)
@@ -65,10 +76,17 @@ export function useGameRoom(roomId: MaybeRef<string>) {
   const myPlayerId = computed(() => view.value?.myPlayerId ?? null)
   const lastResolvedPlays = computed(() => view.value?.lastResolvedPlays ?? [])
   const submissionProgress = computed(() => view.value?.room.submissionProgress ?? null)
-  const isSubscriptionConnected = computed(() => !subscription.error.value && !subscriptionPaused.value)
+  const isSubscriptionConnected = computed(
+    () => wsConnected.value && !subscription.error.value && !subscriptionPaused.value,
+  )
+  const isReconnecting = computed(() => wsReconnecting.value && !subscriptionPaused.value)
   const isLoading = computed(() => bootstrapQuery.fetching.value && !view.value)
   const queryError = computed(() => bootstrapQuery.error.value?.message ?? null)
   const subscriptionError = computed(() => subscription.error.value?.message ?? null)
+
+  function applyView(payload: PlayerPrivateView): void {
+    view.value = payload
+  }
 
   function applyMutationView(result: MutationResult | null | undefined): GameError[] {
     if (result?.success && result.view) {
@@ -112,11 +130,13 @@ export function useGameRoom(roomId: MaybeRef<string>) {
     submissionProgress,
     isLoading,
     isSubscriptionConnected,
+    isReconnecting,
     queryError,
     subscriptionError,
     leaveRoom,
     startGame,
     submitCard,
     refetchView,
+    applyView,
   }
 }

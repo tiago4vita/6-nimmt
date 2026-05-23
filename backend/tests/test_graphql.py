@@ -394,15 +394,35 @@ async def test_no_hand_leakage_in_public_room(client: httpx.AsyncClient) -> None
 async def test_update_display_name_succeeds(client: httpx.AsyncClient) -> None:
     async with client:
         guest_id, token = await _ensure_guest(client)
+        await _create_room(client, token, guest_id, name="OldName")
         result = await _gql(
             client,
-            'mutation { updateDisplayName(displayName: "NewName") { success errors { code } } }',
+            """
+            mutation {
+              updateDisplayName(displayName: "NewName") {
+                success
+                errors { code }
+                view {
+                  myPlayerId
+                  room { players { id displayName } }
+                }
+              }
+            }
+            """,
             token=token,
             guest_id=guest_id,
         )
     payload = result["data"]["updateDisplayName"]
     assert payload["success"] is True
     assert payload["errors"] == []
+    view = payload["view"]
+    assert view is not None
+    host = next(
+        player
+        for player in view["room"]["players"]
+        if player["id"] == view["myPlayerId"]
+    )
+    assert host["displayName"] == "NewName"
 
 
 async def test_join_started_room_returns_game_already_started(

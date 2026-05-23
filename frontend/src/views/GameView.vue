@@ -7,6 +7,7 @@ import AppShell from '@/components/layout/AppShell.vue'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog.vue'
 import ReconnectBanner from '@/components/feedback/ReconnectBanner.vue'
 import CardHand from '@/components/game/CardHand.vue'
+import CardTile from '@/components/game/CardTile.vue'
 import GameBoard from '@/components/game/GameBoard.vue'
 import GamePhaseOverlay from '@/components/game/GamePhaseOverlay.vue'
 import PhaseIndicator from '@/components/game/PhaseIndicator.vue'
@@ -37,7 +38,7 @@ const {
   lastResolvedPlays,
   submissionProgress,
   isLoading,
-  isSubscriptionConnected,
+  isReconnecting,
   subscriptionError,
   submitCard,
   leaveRoom,
@@ -104,7 +105,7 @@ async function confirmLeave(): Promise<void> {
 
 <template>
   <AppShell>
-    <ReconnectBanner :visible="!isSubscriptionConnected && !isLoading" />
+    <ReconnectBanner :visible="isReconnecting && !isLoading" />
     <GamePhaseOverlay :phase="phase" />
 
     <div v-if="isLoading" class="flex min-h-[40vh] items-center justify-center text-sm text-muted">
@@ -135,13 +136,23 @@ async function confirmLeave(): Promise<void> {
       <section class="rounded-xl border border-border bg-surface-raised p-4">
         <div class="mb-3 flex items-center justify-between">
           <h2 class="text-sm font-medium text-text">Your hand</h2>
-          <span v-if="mySubmittedCard" class="text-xs text-success">Submitted</span>
+          <span v-if="mySubmittedCard" class="text-xs text-success">Submitted — waiting for others</span>
           <span v-else-if="phase === 'SUBMIT'" class="text-xs text-muted">Click a card to submit</span>
         </div>
+
+        <div
+          v-if="mySubmittedCard"
+          class="mb-4 flex items-center gap-3 rounded-md border border-success/30 bg-success/10 px-3 py-2"
+        >
+          <span class="text-xs text-muted">Your pick this round</span>
+          <CardTile :card="mySubmittedCard" submitted />
+        </div>
+
         <CardHand
           :cards="myHand"
           :selected-card-id="selectedCardId"
           :optimistic-selected-id="optimisticSelectedId"
+          :submitted-card-id="mySubmittedCard?.id ?? null"
           :disabled="isHandLocked || phase !== 'SUBMIT'"
           @submit="submitCardFromHand"
         />

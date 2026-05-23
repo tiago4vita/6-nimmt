@@ -172,4 +172,7 @@ class Mutation:
         session = await session_service.update_display_name(guest_id, cleaned)
         if session is None:
             return _failure(GameErrorCode.SESSION_EXPIRED, "Session expired")
-        return _success(None)
+        room = await room_service.update_seated_display_name(
+            guest_id=guest_id, display_name=cleaned
+        )
+        return _success(_private_or_none(room, guest_id))

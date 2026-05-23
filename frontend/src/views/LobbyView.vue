@@ -29,10 +29,11 @@ const {
   myPlayerId,
   phase,
   isLoading,
-  isSubscriptionConnected,
+  isReconnecting,
   subscriptionError,
   startGame,
   leaveRoom,
+  applyView,
 } = useGameRoom(toRef(props, 'roomId'))
 
 const showLeaveConfirm = ref(false)
@@ -108,6 +109,10 @@ async function saveDisplayName(): Promise<void> {
     return
   }
 
+  if (payload.view) {
+    applyView(payload.view)
+  }
+
   isEditingName.value = false
   pushToast('Display name updated')
 }
@@ -115,7 +120,7 @@ async function saveDisplayName(): Promise<void> {
 
 <template>
   <AppShell>
-    <ReconnectBanner :visible="!isSubscriptionConnected && !isLoading" />
+    <ReconnectBanner :visible="isReconnecting && !isLoading" />
 
     <div v-if="isLoading" class="flex min-h-[40vh] items-center justify-center text-sm text-muted">
       Loading lobby…
