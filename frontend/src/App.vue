@@ -1,11 +1,16 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+import { RouterView } from 'vue-router'
+
+import { useGuestSession } from '@/composables/useGuestSession'
+
+const { ensureSession } = useGuestSession()
+
+onMounted(() => {
+  void ensureSession()
+})
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-neutral-50 text-neutral-900">
-    <div class="text-center">
-      <h1 class="text-4xl font-semibold tracking-tight">6 Nimmt</h1>
-      <p class="mt-3 text-neutral-600">Development environment is ready.</p>
-    </div>
-  </main>
+  <RouterView />
 </template>

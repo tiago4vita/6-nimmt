@@ -31,6 +31,18 @@ export function readGuestSession(): GuestSessionStorage | null {
   }
 }
 
+export function writeGuestSession(session: GuestSessionStorage): void {
+  localStorage.setItem(GUEST_SESSION_STORAGE_KEY, JSON.stringify(session))
+}
+
+export function clearGuestSession(): void {
+  localStorage.removeItem(GUEST_SESSION_STORAGE_KEY)
+}
+
+export function isGuestSessionExpired(session: GuestSessionStorage): boolean {
+  return new Date(session.expiresAt).getTime() <= Date.now()
+}
+
 export function getAuthHeaders(): Record<string, string> {
   const session = readGuestSession()
   if (!session) {
