@@ -35,7 +35,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://nimmt:nimmt@postgres:5432/nimmt
       REDIS_URL: redis://redis:6379/0
-      CORS_ORIGINS: http://localhost:5173
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       SESSION_SECRET: dev-only-change-me
     volumes:
       - ./backend:/app
@@ -53,8 +53,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_GRAPHQL_HTTP_URL: http://localhost:8000/graphql
-      VITE_GRAPHQL_WS_URL: ws://localhost:8000/graphql
+      VITE_GRAPHQL_HTTP_URL: ${VITE_GRAPHQL_HTTP_URL:-http://localhost:8000/graphql}
+      VITE_GRAPHQL_WS_URL: ${VITE_GRAPHQL_WS_URL:-ws://localhost:8000/graphql}
     volumes:
       - ./frontend:/app
       - /app/node_modules

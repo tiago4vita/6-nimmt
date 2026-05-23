@@ -5,10 +5,16 @@ import type { Card, GameError } from '@/graphql/types'
 interface UseCardSelectionOptions {
   myHand: Ref<Card[]>
   mySubmittedCard: Ref<Card | null>
+  roundNumber: Ref<number | undefined>
   onSubmit: (cardId: string) => Promise<GameError[]>
 }
 
-export function useCardSelection({ myHand, mySubmittedCard, onSubmit }: UseCardSelectionOptions) {
+export function useCardSelection({
+  myHand,
+  mySubmittedCard,
+  roundNumber,
+  onSubmit,
+}: UseCardSelectionOptions) {
   const selectedCardId = ref<string | null>(null)
   const optimisticSelectedId = ref<string | null>(null)
   const isSubmitting = ref(false)
@@ -26,7 +32,20 @@ export function useCardSelection({ myHand, mySubmittedCard, onSubmit }: UseCardS
       optimisticSelectedId.value = null
       selectedCardId.value = submitted.id
       isSubmitting.value = false
+      return
     }
+
+    selectedCardId.value = null
+    optimisticSelectedId.value = null
+    isSubmitting.value = false
+    submitError.value = null
+  })
+
+  watch(roundNumber, () => {
+    selectedCardId.value = null
+    optimisticSelectedId.value = null
+    isSubmitting.value = false
+    submitError.value = null
   })
 
   function selectCard(cardId: string): void {
@@ -50,6 +69,14 @@ export function useCardSelection({ myHand, mySubmittedCard, onSubmit }: UseCardS
       const errors = await onSubmit(cardId)
       if (errors.length > 0) {
         submitError.value = errors[0]?.message ?? 'Could not submit card'
+        optimisticSelectedId.value = null
+        isSubmitting.value = false
+        return
+      }
+
+      // Last submitter triggers instant resolve — mutation view may already have
+      // mySubmittedCard cleared for the next round.
+      if (!mySubmittedCard.value) {
         optimisticSelectedId.value = null
         isSubmitting.value = false
       }

@@ -44,6 +44,8 @@ const {
   leaveRoom,
 } = useGameRoom(toRef(props, 'roomId'))
 
+const roundNumber = computed(() => room.value?.roundNumber)
+
 const showLeaveConfirm = ref(false)
 const isLeaving = ref(false)
 const showResults = ref(false)
@@ -57,6 +59,7 @@ const {
 } = useCardSelection({
   myHand,
   mySubmittedCard,
+  roundNumber,
   onSubmit: async (cardId) => {
     const errors = await submitCard(cardId)
     return errors
