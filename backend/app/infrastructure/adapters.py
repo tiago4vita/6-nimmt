@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from app.domain.cards import Card, Deck
 from app.domain.game import GameState, PlayerState
+from app.domain.resolve import ResolvedPlay
 from app.domain.rows import Row
-from app.infrastructure.models import CardDTO, GameRoomState, RowDTO
+from app.infrastructure.models import CardDTO, GameRoomState, ResolvedPlayDTO, RowDTO
 
 
 def _card_to_dto(card: Card) -> CardDTO:
@@ -20,6 +21,16 @@ def _row_to_dto(row: Row) -> RowDTO:
 
 def _dto_to_row(dto: RowDTO) -> Row:
     return Row(cards=[_dto_to_card(card) for card in dto.cards])
+
+
+def _resolved_play_to_dto(play: ResolvedPlay) -> ResolvedPlayDTO:
+    return ResolvedPlayDTO(
+        player_id=play.player_id,
+        card=_card_to_dto(play.card),
+        row_index=play.row_index,
+        collected_row=play.collected_row,
+        bones_collected=play.bones_taken,
+    )
 
 
 def room_to_game_state(room: GameRoomState) -> GameState:
@@ -53,6 +64,8 @@ def apply_game_state(room: GameRoomState, state: GameState) -> GameRoomState:
     room.rows = [_row_to_dto(row) for row in state.rows]
     room.deck = [_card_to_dto(card) for card in state.deck.cards]
     room.winner_ids = list(state.winner_ids) if state.winner_ids is not None else None
+    if state.last_resolution is not None:
+        room.last_resolution = [_resolved_play_to_dto(play) for play in state.last_resolution]
 
     state_by_id = {player.id: player for player in state.players}
     for player in room.players:

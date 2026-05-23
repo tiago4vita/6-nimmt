@@ -3,10 +3,14 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field, replace
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from app.domain.cards import Card, Deck
 from app.domain.rows import Row, row_bones
 from app.domain.scoring import winner_ids
+
+if TYPE_CHECKING:
+    from app.domain.resolve import ResolvedPlay
 
 PlayerId = str
 
@@ -60,6 +64,7 @@ class GameState:
     players: list[PlayerState] = field(default_factory=list)
     deck: Deck = field(default_factory=Deck.standard)
     winner_ids: list[PlayerId] | None = None
+    last_resolution: list[ResolvedPlay] | None = None
 
     @property
     def cards_per_hand(self) -> int:
@@ -90,6 +95,7 @@ class GameState:
             players=[player.copy() for player in self.players],
             deck=Deck(cards=list(self.deck.cards)),
             winner_ids=list(self.winner_ids) if self.winner_ids is not None else None,
+            last_resolution=list(self.last_resolution) if self.last_resolution is not None else None,
         )
 
     def hand_card_value(self, player_id: PlayerId, card_id: str) -> int:

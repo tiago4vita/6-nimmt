@@ -72,6 +72,17 @@ async def touch_session(guest_id: str, *, client: Redis | None = None) -> GuestS
     return session
 
 
+async def update_display_name(
+    guest_id: str, display_name: str, *, client: Redis | None = None
+) -> GuestSession | None:
+    session = await get_session(guest_id, client=client)
+    if session is None:
+        return None
+    session.display_name = display_name
+    await _save_session(session, client=client)
+    return session
+
+
 async def validate_token(
     guest_id: str,
     token: str,

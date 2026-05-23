@@ -4,24 +4,15 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
-import strawberry
 from strawberry.fastapi import GraphQLRouter
 
 from app.config import settings
+from app.graphql.context import get_http_context
+from app.graphql.schema import schema
 from app.infrastructure import pubsub
 from app.infrastructure import redis as redis_module
 from app.infrastructure import timers
 from app.openapi import OPENAPI_PATH, build_app_openapi
-
-
-@strawberry.type
-class Query:
-    @strawberry.field(description="Health check for Docker / portfolio demo.")
-    def health(self) -> str:
-        return "ok"
-
-
-schema = strawberry.Schema(query=Query)
 
 
 @asynccontextmanager
@@ -85,4 +76,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(GraphQLRouter(schema), prefix="/graphql")
+graphql_app = GraphQLRouter(
+    schema,
+    context_getter=get_http_context,
+    subscription_protocols=("graphql-transport-ws", "graphql-ws"),
+)
+
+app.include_router(graphql_app, prefix="/graphql")
