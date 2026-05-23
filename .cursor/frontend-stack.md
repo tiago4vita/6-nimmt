@@ -8,8 +8,9 @@
 | Language | **TypeScript** | `strict: true` |
 | Build tool | **Vite** | Latest stable |
 | GraphQL client | **URQL** | `@urql/vue` + `@urql/exchange-graphcache` (optional) |
-| Styling | **Tailwind CSS** | v4 or v3 per project init |
-| Icons | Lucide Vue or Heroicons (pick one, stay consistent) | — |
+| Styling | **Tailwind CSS** | v4 via `@tailwindcss/vite` |
+| Icons | **Lucide Vue** (`lucide-vue-next`) | Latest stable |
+| Fonts | **Inter** via `@fontsource/inter` | Latest stable |
 
 ## Why This Stack
 
@@ -31,35 +32,52 @@
 
 - Matches minimalist, typography-first UI goal
 - Rapid layout iteration for card grid and row display
-- Design tokens via `tailwind.config` (spacing, neutrals, one accent)
+- Design tokens via CSS variables in `src/style.css` (Tailwind v4 — no separate `tailwind.config` required for v1)
 
-## Dependencies (Target)
+## Installed Dependencies
+
+As declared in `frontend/package.json`:
 
 ```json
 {
   "dependencies": {
-    "vue": "^3.x",
-    "vue-router": "^4.x",
-    "@urql/vue": "^1.x",
+    "vue": "^3.5.x",
+    "vue-router": "^4.5.x",
+    "@urql/vue": "^1.4.x",
     "graphql": "^16.x",
     "graphql-ws": "^5.x",
     "@vueuse/core": "^11.x"
   },
   "devDependencies": {
-    "typescript": "^5.x",
+    "typescript": "~5.7.x",
     "vite": "^6.x",
     "@vitejs/plugin-vue": "^5.x",
+    "vue-tsc": "^2.x",
     "tailwindcss": "^4.x",
-    "graphql-codegen": "optional — see below"
+    "@tailwindcss/vite": "^4.x"
   }
 }
 ```
+
+### Pending Design-System Additions
+
+Install when the design system lands (see [frontend-design.md](./frontend-design.md)):
+
+```bash
+npm install lucide-vue-next @fontsource/inter
+```
+
+| Package | Purpose |
+|---|---|
+| `lucide-vue-next` | Icon set — locked choice over Heroicons for thinner strokes that pair with Inter on dark surfaces |
+| `@fontsource/inter` | Self-hosted Inter font; imported once in `src/main.ts` (`import '@fontsource/inter/400.css'` and `/600.css`) |
 
 ### `@vueuse/core` — Use Sparingly
 
 Allowed:
 
 - `useLocalStorage` for guest session persistence
+- `useLocalStorage` for the `sfxEnabled` preference (key: `nimmt:sfxEnabled`, default `false`)
 
 Avoid importing the full utility catalog; keep dependencies lean.
 
@@ -79,26 +97,40 @@ frontend/
 
 Benefits: no hand-written `any` on mutation variables; subscription payloads typed end-to-end.
 
-## URQL Client Setup (Reference)
+## URQL Client Setup (Implemented)
+
+`src/graphql/client.ts` — HTTP + WebSocket exchanges with env fallbacks for local dev.
+
+`src/main.ts` — register the Vue plugin with a **default import**:
+
+```typescript
+import urql from '@urql/vue'
+import { urqlClient } from './graphql/client'
+
+createApp(App).use(urql, urqlClient).mount('#app')
+```
+
+Reference client configuration:
 
 ```typescript
 // src/graphql/client.ts
-import { createClient, subscriptionExchange, fetchExchange } from '@urql/vue';
-import { createClient as createWsClient } from 'graphql-ws';
+import { createClient, subscriptionExchange, fetchExchange } from '@urql/vue'
+import { createClient as createWsClient } from 'graphql-ws'
+
+import { getAuthHeaders } from '../lib/guest-session'
+
+const httpUrl = import.meta.env.VITE_GRAPHQL_HTTP_URL ?? 'http://localhost:8000/graphql'
+const wsUrl = import.meta.env.VITE_GRAPHQL_WS_URL ?? 'ws://localhost:8000/graphql'
 
 const wsClient = createWsClient({
-  url: import.meta.env.VITE_GRAPHQL_WS_URL,
-  connectionParams: () => ({
-    authorization: `Bearer ${localStorage.getItem('guestToken')}`,
-  }),
-});
+  url: wsUrl,
+  connectionParams: () => getAuthHeaders(),
+})
 
 export const urqlClient = createClient({
-  url: import.meta.env.VITE_GRAPHQL_HTTP_URL,
+  url: httpUrl,
   fetchOptions: () => ({
-    headers: {
-      authorization: `Bearer ${localStorage.getItem('guestToken')}`,
-    },
+    headers: getAuthHeaders(),
   }),
   exchanges: [
     fetchExchange,
@@ -106,15 +138,23 @@ export const urqlClient = createClient({
       forwardSubscription: (operation) => ({
         subscribe: (sink) => ({
           unsubscribe: wsClient.subscribe(
-            { ...operation, query: operation.query || '' },
-            sink
+            { ...operation, query: operation.query ?? '' },
+            sink,
           ),
         }),
       }),
     }),
   ],
-});
+})
 ```
+
+Tailwind v4 entry in `src/style.css`:
+
+```css
+@import "tailwindcss";
+```
+
+Vite plugins in `vite.config.ts`: `@vitejs/plugin-vue`, `@tailwindcss/vite`.
 
 ## Environment Variables
 
@@ -135,6 +175,7 @@ export const urqlClient = createClient({
 
 ## Cross-References
 
+- Screen UX, wireframes, design tokens: [frontend-design.md](./frontend-design.md)
 - Component & composable patterns: [frontend-patterns.md](./frontend-patterns.md)
 - API operations: [graphql-schema.md](./graphql-schema.md)
 - Docker env wiring: [deployment.md](./deployment.md)

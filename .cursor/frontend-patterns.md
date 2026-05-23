@@ -4,18 +4,33 @@
 
 - **Subscription as source of truth** for in-game UI — do not duplicate live state in Pinia
 - **Optimistic UI** only for `submitCard` (disable hand, show selection until subscription confirms)
-- **Minimalist layout** — neutral background, one accent color, card faces as sharp geometric tiles
+- **Dark table-top, vibrant cards** — dark chrome with a moody felt background; color reserved for the play surface so card faces carry the visual energy
+- **Desktop-first** — mobile gets a `MobileDesktopNotice` banner; no responsive board layout in v1
+- **Moderate motion micro-delights** — hover lift, staggered resolve, progress pulse; everything respects `prefers-reduced-motion`
 - **Composition API** — all new components use `<script setup lang="ts">`
 
+> Screen-level UX (wireframes, heuristics, motion catalog, SFX, accessibility) lives in [frontend-design.md](./frontend-design.md). This file covers Vue-side conventions: directory layout, composables, URQL usage, and component contracts.
+
 ## Directory Structure
+
+**Current scaffold** (exists today):
 
 ```
 frontend/src/
   main.ts
   App.vue
-  router/index.ts
+  style.css              # @import "tailwindcss"
+  vite-env.d.ts
   graphql/
     client.ts
+```
+
+**Target layout** (add as features land):
+
+```
+frontend/src/
+  router/index.ts
+  graphql/
     operations/
       session.graphql
       room.graphql
@@ -28,6 +43,8 @@ frontend/src/
   components/
     layout/
       AppShell.vue
+      MobileDesktopNotice.vue   # Desktop-first; banner on small viewports
+      SfxToggle.vue             # Header control; persists sfxEnabled in localStorage
     game/
       CardTile.vue
       CardHand.vue
@@ -36,28 +53,38 @@ frontend/src/
       PlayerStrip.vue
       SubmissionProgress.vue
       PhaseIndicator.vue
+      ResolveFeed.vue           # Staggered lastResolvedPlays reveal
+      SubmitCountdown.vue       # Activated only if backend exposes a deadline
+      GamePhaseOverlay.vue      # DEAL / RESOLVE / SCORE shimmer
+      ResultsOverlay.vue        # FINISHED modal — primary end-game UX
     lobby/
       RoomCodeInput.vue
       CreateRoomForm.vue
+      RoomHeader.vue
+      PlayerList.vue
+      CopyRoomActions.vue
+      RulesDrawer.vue
+    feedback/
+      ReconnectBanner.vue
+      ToastHost.vue
+      ConfirmDialog.vue
   views/
     HomeView.vue         # Create / join
     LobbyView.vue        # Waiting room
-    GameView.vue         # Active play
-    ResultsView.vue      # FINISHED overlay or route
-  styles/
-    main.css             # Tailwind directives + CSS variables
+    GameView.vue         # Active play + ResultsOverlay on FINISHED
+    ResultsView.vue      # Deep-link alias that mounts ResultsOverlay over a frozen view
 ```
 
 ## Routing
 
-| Path | View | Auth |
-|---|---|---|
-| `/` | HomeView | Auto `ensureGuestSession` |
-| `/room/:roomId/lobby` | LobbyView | Guest + seated |
-| `/room/:roomId/play` | GameView | Guest + seated |
-| `/room/:roomId/results` | ResultsView | Guest + FINISHED |
+| Path | View | Auth | Notes |
+|---|---|---|---|
+| `/` | HomeView | Auto `ensureGuestSession` | Create or join entry |
+| `/room/:roomId/lobby` | LobbyView | Guest + seated | Auto-advances to `/play` when `phase >= SUBMIT` |
+| `/room/:roomId/play` | GameView | Guest + seated | Mounts `ResultsOverlay` when `phase === FINISHED` |
+| `/room/:roomId/results` | ResultsView | Guest + FINISHED | Deep-link alias that renders `ResultsOverlay` over a frozen view; not the happy-path |
 
-Redirect `/room/:id/play` → `/lobby` if phase is `LOBBY`.
+Redirect `/room/:id/play` → `/lobby` if phase is `LOBBY`. Primary end-of-game UX is the overlay on `GameView`; the `/results` route exists so a final score can be shared by URL.
 
 ## Composables
 
@@ -150,8 +177,9 @@ Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 
 
 ### `GameBoard.vue`
 
-- Four `GameRow` components in a vertical or 2×2 grid
-- Highlight row affected on last resolve (optional animation — keep ≤ 200ms fade)
+- Four `GameRow` components stacked **vertically** (4 horizontal rows) on the felt surface
+- Highlights the row affected on the last resolve via a 200ms amber wash fade
+- No 2×2 fallback in v1 — narrow viewports fall through to `MobileDesktopNotice`
 
 ### `PlayerStrip.vue`
 
@@ -160,20 +188,25 @@ Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 
 
 ## Tailwind Design Tokens
 
-Define in `tailwind.config` or CSS variables:
+Dark-first table-top palette. Define in `src/style.css` (alongside `@import "tailwindcss"`):
 
 ```css
 :root {
-  --color-surface: #fafafa;
-  --color-card: #ffffff;
-  --color-border: #e5e5e5;
-  --color-text: #171717;
-  --color-muted: #737373;
-  --color-accent: #2563eb;   /* Single accent — sparingly */
+  --color-surface: #0c0c0f;        /* App background — near-black */
+  --color-surface-raised: #16161a; /* Panels, player strip */
+  --color-felt: #1a2e1a;           /* Subtle green tint behind board */
+  --color-border: #2a2a32;
+  --color-text: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-accent: #d4a017;         /* Amber — table lamp / CTA accent */
+  --color-danger: #ef4444;         /* Penalties, errors */
+  --color-success: #22c55e;        /* Submitted, connected */
 }
 ```
 
-Typography: system-ui or Inter. No more than two font sizes for in-game HUD.
+Typography: **Inter** via `@fontsource/inter`. Use `font-variant-numeric: tabular-nums` for card values and scores so digits don't jitter during count-up animations. No more than two font sizes in the in-game HUD.
+
+Card faces use **value-driven hue bands** (blue-violet → teal → amber → rose, ascending) with bull-head intensity as a severity cue. Full chroma rules and indicator styles live in [frontend-design.md](./frontend-design.md#card-chroma-vibrant-value-driven).
 
 ## Error & Loading UX
 
@@ -184,11 +217,18 @@ Typography: system-ui or Inter. No more than two font sizes for in-game HUD.
 | Mutation error | Inline toast with `GameError.message` |
 | Wrong phase action | Button disabled proactively using `phase` from view |
 
+## Motion & Reduced Motion
+
+All animations are short (≤ 400ms) and respect `@media (prefers-reduced-motion: reduce)`. The full per-interaction catalog (hover lift, submit lock, resolve stagger, row highlight, score count-up, etc.) lives in [frontend-design.md](./frontend-design.md#motion-catalog). When reduced motion is requested, swap transforms for opacity or static state changes — never drop the feedback itself.
+
 ## Accessibility
 
-- Card buttons: `aria-pressed` when selected
-- Keyboard: number keys 1–N select nth card (nice-to-have)
-- Sufficient contrast on Tailwind neutrals
+- Card buttons: `aria-pressed` when selected, `aria-disabled` while the hand is locked
+- Toasts use `role="status"` for info or `role="alert"` for errors; the reconnect banner uses `aria-live="polite"`
+- Color is never the sole signal — pair connection/submission dots with text or icons; penalties surface a number alongside the red wash
+- Card numbers must meet WCAG AA contrast against their gradient face (verify each hue band during implementation)
+- Keyboard: `Tab` cycles the hand; number keys `1`–`N` select the nth visible card; `Enter` / `Space` submits the selected card
+- Focus rings: amber accent at 60% opacity, visible on every dark surface
 
 ## Testing (When Added)
 
@@ -198,6 +238,7 @@ Typography: system-ui or Inter. No more than two font sizes for in-game HUD.
 
 ## Cross-References
 
+- Screen UX, wireframes, motion catalog: [frontend-design.md](./frontend-design.md)
 - Stack choices: [frontend-stack.md](./frontend-stack.md)
 - GraphQL operations: [graphql-schema.md](./graphql-schema.md)
 - Guest session: [auth.md](./auth.md)

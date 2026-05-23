@@ -17,9 +17,11 @@ This directory is the **single source of truth** for architecture, game rules, a
 
 | File | Purpose | Read when… |
 |---|---|---|
+| [roadmap.md](./roadmap.md) | Milestones, task checklist, sprint order, MVP definition of done | Planning work, picking the next task |
 | [architecture-overview.md](./architecture-overview.md) | System boundaries, data flow, layer responsibilities | Starting any feature or onboarding |
 | [frontend-stack.md](./frontend-stack.md) | Locked-in frontend tooling and rationale | Frontend setup, dependency choices |
-| [frontend-patterns.md](./frontend-patterns.md) | Vue composables, URQL usage, UI conventions | Building views, components, or client logic |
+| [frontend-patterns.md](./frontend-patterns.md) | Vue composables, URQL usage, component contracts | Building views, components, or client logic |
+| [frontend-design.md](./frontend-design.md) | Screens, wireframes, heuristics, motion, SFX, accessibility | Designing or implementing any UI surface |
 | [game-logic.md](./game-logic.md) | Rules, phases, turn resolution, scoring | Backend game engine, validation, edge cases |
 | [graphql-schema.md](./graphql-schema.md) | Types, queries, mutations, subscriptions, visibility rules | API design, resolvers, client operations |
 | [state-management.md](./state-management.md) | Redis keys, pub/sub, reconnect, desync recovery | Live game state, WebSocket/subscription layer |
@@ -35,35 +37,66 @@ This directory is the **single source of truth** for architecture, game rules, a
 4. **Async integrity** — Backend uses `async/await` throughout; no blocking I/O on the event loop.
 5. **Strict typing** — Python type hints + TypeScript strict mode; avoid `any`.
 6. **N+1 avoidance** — Use DataLoaders for relational GraphQL fields (e.g., player profiles in history).
-7. **Minimalist UI** — Whitespace, typography, soft transitions; no flashy multi-color chrome.
+7. **Dark table-top, vibrant cards** — Dark chrome with a moody felt background; vibrant color is reserved for card faces so the play surface carries the visual energy. Moderate motion micro-delights honor `prefers-reduced-motion`.
 
-## Repository Layout (Target)
+## Repository Layout
 
 ```
 6-nimmt/
 ├── .cursor/              # This documentation
 ├── backend/
 │   ├── app/
-│   │   ├── domain/       # Pure game logic (no I/O)
-│   │   ├── graphql/      # Strawberry schema, resolvers, dataloaders
-│   │   ├── infrastructure/  # Redis, PostgreSQL, pub/sub
-│   │   └── main.py
+│   │   ├── config.py     # pydantic-settings (implemented)
+│   │   ├── main.py       # FastAPI + health GraphQL (implemented)
+│   │   ├── domain/       # Pure game logic (planned)
+│   │   ├── graphql/      # Strawberry schema, resolvers, dataloaders (planned)
+│   │   └── infrastructure/  # Redis, PostgreSQL, pub/sub (planned)
 │   ├── tests/
+│   ├── .env.example
+│   ├── Dockerfile
 │   └── pyproject.toml
 ├── frontend/
 │   ├── src/
-│   │   ├── composables/
-│   │   ├── components/
-│   │   ├── graphql/
-│   │   └── views/
+│   │   ├── App.vue
+│   │   ├── main.ts
+│   │   ├── style.css     # Tailwind v4 entry
+│   │   ├── graphql/client.ts
+│   │   ├── composables/  # planned
+│   │   ├── components/   # planned
+│   │   └── views/        # planned
+│   ├── .env.example
+│   ├── Dockerfile
 │   └── package.json
-└── docker-compose.yml
+├── docker-compose.yml
+└── .gitignore
 ```
 
-## Implementation Order (Suggested)
+## Local Setup
+
+Prerequisites: Node 22+, Python 3.12+, Docker Desktop (for Postgres/Redis).
+
+```bash
+# Backend
+cd backend
+python -m venv .venv
+# Windows: .\.venv\Scripts\pip install -e ".[dev]"
+# Unix:    .venv/bin/pip install -e ".[dev]"
+cp .env.example .env
+
+# Frontend
+cd frontend
+npm install
+cp .env.example .env
+```
+
+Run infrastructure + apps — see [deployment.md](./deployment.md).
+
+## Implementation Order
+
+See **[roadmap.md](./roadmap.md)** for the full checklist, milestones (M0–M7), and sprint plan. Critical path:
 
 1. `backend/app/domain/` — Pure game engine + unit tests
-2. Redis live-state layer + GraphQL subscriptions
-3. Guest auth + room lobby
-4. Vue frontend: lobby → room → play
-5. PostgreSQL persistence for completed matches (optional for MVP demo)
+2. Redis live-state layer + guest auth
+3. GraphQL queries, mutations, subscriptions
+4. Vue frontend: home → lobby → play
+5. PostgreSQL persistence for completed matches (non-blocking for MVP)

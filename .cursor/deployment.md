@@ -29,7 +29,9 @@ flowchart LR
 | `backend` | Build `./backend` | 8000 | FastAPI + Strawberry GraphQL |
 | `frontend` | Build `./frontend` | 5173 | Vite dev server (default profile) |
 
-## Target `docker-compose.yml` (Reference)
+## Target `docker-compose.yml`
+
+Implemented at repository root. Matches the reference below.
 
 ```yaml
 services:
@@ -113,7 +115,7 @@ volumes:
 |---|---|---|---|
 | `DATABASE_URL` | Yes | `postgresql+asyncpg://nimmt:nimmt@postgres:5432/nimmt` | Async SQLAlchemy URL |
 | `REDIS_URL` | Yes | `redis://redis:6379/0` | Redis connection |
-| `CORS_ORIGINS` | Yes | `http://localhost:5173` | Comma-separated |
+| `CORS_ORIGINS` | Yes | `http://localhost:5173` | Comma-separated string (parsed in `app.config`) |
 | `SESSION_SECRET` | Yes | random string | Used if JWT signing added later |
 | `LOG_LEVEL` | No | `info` | uvicorn logging |
 
@@ -137,7 +139,16 @@ COPY . .
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 ```
 
-Use **Poetry** or **uv** per project preference when scaffolded.
+Use **pip + venv** with `pyproject.toml` (hatchling build backend). Install editable for local dev:
+
+```bash
+cd backend
+python -m venv .venv
+# Windows
+.\.venv\Scripts\pip install -e ".[dev]"
+# Unix
+.venv/bin/pip install -e ".[dev]"
+```
 
 ### `frontend/Dockerfile`
 
@@ -169,20 +180,28 @@ Build step: `npm run build` → copy `dist/` to nginx image.
 
 ## Local Dev Without Docker
 
-Supported for faster frontend iteration:
+Supported for faster frontend iteration. Requires Docker Desktop running for Postgres/Redis only.
 
 ```bash
 # Terminal 1 — infrastructure only
 docker compose up postgres redis
 
 # Terminal 2 — backend
-cd backend && uvicorn app.main:app --reload
+cd backend
+cp .env.example .env   # first time only; uses localhost URLs
+# Windows
+.\.venv\Scripts\uvicorn.exe app.main:app --reload
+# Unix
+.venv/bin/uvicorn app.main:app --reload
 
 # Terminal 3 — frontend
-cd frontend && npm run dev
+cd frontend
+cp .env.example .env   # first time only
+npm install            # first time only
+npm run dev
 ```
 
-Document both flows in root `README.md` when scaffold exists.
+Open `http://localhost:5173` (frontend) and `http://localhost:8000/graphql` (GraphQL playground / health query).
 
 ## Database Migrations
 
