@@ -1,0 +1,689 @@
+openapi: 3.1.0
+info:
+  title: 6 Nimmt API
+  version: 0.1.0
+  description: |
+    HTTP and WebSocket surface for the **6 nimmt!** (*Take 6*) multiplayer card game.
+
+    ## Architecture
+
+    - **FastAPI** hosts REST health checks and the GraphQL transport.
+    - **Strawberry GraphQL** exposes queries, mutations, and subscriptions at `/graphql`.
+    - **Domain engine** (`backend/app/domain/`) implements pure game rules — no I/O.
+    - **Redis** holds live room state; **PostgreSQL** persists completed matches (post-MVP).
+
+    ## Authentication
+
+    v1 uses anonymous **guest sessions**. Obtain credentials via the `ensureGuestSession` query,
+    then send them on every request:
+
+    ```
+    Authorization: Bearer <sessionToken>
+    X-Guest-Id: <guestId>
+    ```
+
+    WebSocket subscriptions use `graphql-ws` with the same bearer token in `connectionParams`.
+
+    Missing or invalid tokens return HTTP **401** with a GraphQL error extension `UNAUTHENTICATED`.
+
+    ## Game summary
+
+    Players simultaneously play numbered cards (1–104) onto four ascending rows.
+    Playing the sixth card in a row — or being forced to take a row — collects **bones**
+    (penalty points). **Lowest total bones wins.**
+
+    | Players | Cards/hand | Rounds |
+    |---------|------------|--------|
+    | 2       | 10         | 10     |
+    | 3       | 9          | 9      |
+    | 4       | 8          | 8      |
+    | 5       | 7          | 7      |
+    | 6       | 6          | 6      |
+    | 7       | 5          | 5      |
+    | 8       | 4          | 4      |
+    | 9       | 3          | 3      |
+    | 10      | 2          | 2      |
+
+    ### Phases
+
+    | Phase    | Client-visible | Description                              |
+    |----------|----------------|------------------------------------------|
+    | LOBBY    | Yes            | Waiting for players; host can start      |
+    | DEAL     | Transient      | Shuffle, deal, seed rows                 |
+    | SUBMIT   | Yes            | Players pick cards concurrently          |
+    | RESOLVE  | Transient      | Run placement algorithm                  |
+    | SCORE    | Transient      | Update totals, check end                 |
+    | FINISHED | Yes            | Game over; winners exposed               |
+
+    ### Information visibility
+
+    - **Public:** rows, player names, bones totals, hand counts, submission flags.
+    - **Private (per player):** own hand, own submitted card during SUBMIT.
+    - **Never exposed pre-resolve:** other players' chosen cards.
+
+    ## GraphQL operations
+
+    All game operations are GraphQL queries, mutations, or subscriptions.
+    See **components.schemas** for type definitions and **x-graphql-operations** for the operation catalog.
+
+  contact:
+    name: 6 Nimmt
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development (Docker Compose / uvicorn)
+  - url: http://127.0.0.1:8000
+    description: Local development (loopback)
+
+tags:
+  - name: Health
+    description: Service liveness probes for Docker and local dev
+  - name: GraphQL
+    description: Strawberry GraphQL HTTP transport and schema reference
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags: [Health]
+      summary: REST health check
+      description: |
+        Returns service liveness. Equivalent to the GraphQL `health` query.
+        Used by Docker health checks and portfolio demos.
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              example:
+                status: ok
+
+  /graphql:
+    post:
+      operationId: graphqlHttp
+      tags: [GraphQL]
+      summary: Execute GraphQL query or mutation
+      description: |
+        Standard GraphQL over HTTP (POST). Supports queries and mutations.
+
+        **Implemented today:** `health` query.
+
+        **Planned:** full schema per `x-graphql-operations` — guest sessions, rooms,
+        card submission, and live subscriptions via WebSocket.
+
+        ### Example — health check
+
+        ```json
+        { "query": "query { health }" }
+        ```
+
+        ### Example — ensure guest session (planned)
+
+        ```json
+        {
+          "query": "query { ensureGuestSession { guestId sessionToken expiresAt } }"
+        }
+        ```
+
+        ### Example — submit card (planned)
+
+        ```json
+        {
+          "query": "mutation Submit($roomId: ID!, $cardId: ID!) { submitCard(roomId: $roomId, cardId: $cardId) { success errors { code message } } }",
+          "variables": { "roomId": "room-uuid", "cardId": "c42" }
+        }
+        ```
+      security:
+        - BearerAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GraphQLRequest"
+            examples:
+              health:
+                summary: Health query
+                value:
+                  query: "query { health }"
+              ensureGuestSession:
+                summary: Bootstrap guest session (planned)
+                value:
+                  query: "query { ensureGuestSession { guestId sessionToken expiresAt } }"
+              submitCard:
+                summary: Submit a card (planned)
+                value:
+                  query: |
+                    mutation SubmitCard($roomId: ID!, $cardId: ID!) {
+                      submitCard(roomId: $roomId, cardId: $cardId) {
+                        success
+                        errors { code message }
+                        view { myHand { id value bones } mySubmittedCard { id } }
+                      }
+                    }
+                  variables:
+                    roomId: "550e8400-e29b-41d4-a716-446655440000"
+                    cardId: "c42"
+      responses:
+        "200":
+          description: GraphQL response (errors may be present with HTTP 200)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphQLResponse"
+              examples:
+                healthOk:
+                  summary: Health query success
+                  value:
+                    data:
+                      health: ok
+                mutationError:
+                  summary: Business rule violation (planned)
+                  value:
+                    data:
+                      submitCard:
+                        success: false
+                        errors:
+                          - code: INVALID_PHASE
+                            message: Cannot submit card outside SUBMIT phase
+                        view: null
+        "401":
+          description: Missing or invalid guest session token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GraphQLResponse"
+              example:
+                errors:
+                  - message: Unauthenticated
+                    extensions:
+                      code: UNAUTHENTICATED
+
+    get:
+      operationId: graphqlPlayground
+      tags: [GraphQL]
+      summary: GraphQL IDE / playground
+      description: |
+        Strawberry serves an interactive GraphQL playground in development mode.
+        Use this to explore queries and mutations against the running server.
+      security: []
+      responses:
+        "200":
+          description: GraphQL playground HTML
+
+x-websocket:
+  /graphql:
+    protocol: graphql-ws
+    summary: GraphQL subscriptions
+    description: |
+      WebSocket endpoint for live game updates. Same path as HTTP GraphQL.
+
+      ### Connection params
+
+      ```json
+      { "authorization": "Bearer <sessionToken>" }
+      ```
+
+      ### Primary subscription (planned)
+
+      ```graphql
+      subscription MyGameView($roomId: ID!) {
+        myGameViewUpdated(roomId: $roomId) {
+          myPlayerId
+          myHand { id value bones }
+          mySubmittedCard { id value }
+          room {
+            phase
+            roundNumber
+            rows { index cards { id value bones } }
+            players { id displayName bonesTotal hasSubmitted isConnected }
+            submissionProgress { submitted required }
+          }
+        }
+      }
+      ```
+
+      Each connection receives a **player-specific** private view.
+      Never broadcast a shared payload containing all players' hands.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: |
+        Guest session token issued by `ensureGuestSession`.
+        Pair with optional `X-Guest-Id` header for session lookup.
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          example: ok
+
+    GraphQLRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          description: GraphQL operation string
+        variables:
+          type: object
+          additionalProperties: true
+          description: Operation variables
+        operationName:
+          type: string
+          description: Named operation when query contains multiple operations
+
+    GraphQLResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+          description: Operation result on success
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/GraphQLError"
+
+    GraphQLError:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+        locations:
+          type: array
+          items:
+            type: object
+            properties:
+              line:
+                type: integer
+              column:
+                type: integer
+        path:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: integer
+        extensions:
+          type: object
+          properties:
+            code:
+              $ref: "#/components/schemas/GameErrorCode"
+
+    # --- GraphQL domain types (schema reference) ---
+
+    DateTime:
+      type: string
+      format: date-time
+      description: ISO 8601 timestamp
+
+    GamePhase:
+      type: string
+      enum: [LOBBY, DEAL, SUBMIT, RESOLVE, SCORE, FINISHED]
+      description: Finite-state machine phase for a game room
+
+    GameErrorCode:
+      type: string
+      enum:
+        - UNAUTHENTICATED
+        - ROOM_NOT_FOUND
+        - ROOM_FULL
+        - GAME_ALREADY_STARTED
+        - NOT_HOST
+        - INVALID_PHASE
+        - CARD_NOT_IN_HAND
+        - ALREADY_SUBMITTED
+        - PLAYER_NOT_IN_ROOM
+        - SESSION_EXPIRED
+      description: Stable error codes returned in mutation payloads and GraphQL extensions
+
+    GameError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          $ref: "#/components/schemas/GameErrorCode"
+        message:
+          type: string
+
+    Card:
+      type: object
+      required: [id, value, bones]
+      properties:
+        id:
+          type: string
+          description: Stable card identifier (e.g. `c42` for value 42)
+          example: c42
+        value:
+          type: integer
+          minimum: 1
+          maximum: 104
+          example: 42
+        bones:
+          type: integer
+          minimum: 1
+          maximum: 7
+          description: |
+            Penalty points for this card:
+            55 → 7; multiples of 11 (except 55) → 5; multiples of 10 → 3;
+            multiples of 5 → 2; otherwise → 1
+          example: 2
+
+    Row:
+      type: object
+      required: [index, cards]
+      properties:
+        index:
+          type: integer
+          minimum: 0
+          maximum: 3
+        cards:
+          type: array
+          maxItems: 5
+          items:
+            $ref: "#/components/schemas/Card"
+          description: Ascending cards; sixth placement triggers collection (Rule B)
+
+    PlayerPublic:
+      type: object
+      required:
+        - id
+        - displayName
+        - bonesTotal
+        - cardsInHand
+        - hasSubmitted
+        - isConnected
+        - isHost
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+          maxLength: 32
+        bonesTotal:
+          type: integer
+          minimum: 0
+        cardsInHand:
+          type: integer
+          minimum: 0
+          description: Hand size only — card values are never exposed to other players
+        hasSubmitted:
+          type: boolean
+        isConnected:
+          type: boolean
+        isHost:
+          type: boolean
+
+    SubmissionProgress:
+      type: object
+      required: [submitted, required]
+      properties:
+        submitted:
+          type: integer
+          minimum: 0
+        required:
+          type: integer
+          minimum: 1
+
+    GameRoomPublic:
+      type: object
+      required:
+        - id
+        - code
+        - phase
+        - roundNumber
+        - rows
+        - players
+        - submissionProgress
+        - updatedAt
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+          minLength: 6
+          maxLength: 6
+          description: Six-character uppercase join code
+          example: ABC123
+        phase:
+          $ref: "#/components/schemas/GamePhase"
+        roundNumber:
+          type: integer
+          minimum: 0
+        rows:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            $ref: "#/components/schemas/Row"
+        players:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlayerPublic"
+        submissionProgress:
+          $ref: "#/components/schemas/SubmissionProgress"
+        winnerIds:
+          type: array
+          items:
+            type: string
+          nullable: true
+          description: Non-null when phase is FINISHED
+        updatedAt:
+          $ref: "#/components/schemas/DateTime"
+
+    ResolvedPlay:
+      type: object
+      required: [playerId, card, bonesTaken]
+      properties:
+        playerId:
+          type: string
+        card:
+          $ref: "#/components/schemas/Card"
+        rowIndex:
+          type: integer
+          minimum: 0
+          maximum: 3
+          nullable: true
+        bonesTaken:
+          type: integer
+          minimum: 0
+          description: Bones collected on this play (0 if none)
+
+    PlayerPrivateView:
+      type: object
+      required: [room, myPlayerId, myHand, lastResolvedPlays]
+      properties:
+        room:
+          $ref: "#/components/schemas/GameRoomPublic"
+        myPlayerId:
+          type: string
+        myHand:
+          type: array
+          items:
+            $ref: "#/components/schemas/Card"
+        mySubmittedCard:
+          allOf:
+            - $ref: "#/components/schemas/Card"
+          nullable: true
+          description: Visible only to the submitting player during SUBMIT
+        lastResolvedPlays:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResolvedPlay"
+
+    GuestSession:
+      type: object
+      required: [guestId, sessionToken, expiresAt]
+      properties:
+        guestId:
+          type: string
+        sessionToken:
+          type: string
+          description: Opaque bearer token — only returned at creation/refresh
+        expiresAt:
+          $ref: "#/components/schemas/DateTime"
+
+    MutationResult:
+      type: object
+      required: [success, errors]
+      properties:
+        success:
+          type: boolean
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/GameError"
+        view:
+          allOf:
+            - $ref: "#/components/schemas/PlayerPrivateView"
+          nullable: true
+          description: Refreshed private view on success
+
+x-graphql-operations:
+  queries:
+    ensureGuestSession:
+      status: planned
+      returns: GuestSession
+      description: Bootstrap guest session if missing; returns token and guestId
+      authentication: optional
+    roomByCode:
+      status: planned
+      arguments:
+        code:
+          type: String!
+      returns: GameRoomPublic
+      description: Fetch room by join code (public view only)
+      authentication: required
+    myGameView:
+      status: planned
+      arguments:
+        roomId:
+          type: ID!
+      returns: PlayerPrivateView
+      description: Full private view for the current guest in a room
+      authentication: required
+    health:
+      status: implemented
+      returns: String!
+      description: Health check for Docker / portfolio demo
+      authentication: none
+
+  mutations:
+    createRoom:
+      status: planned
+      arguments:
+        displayName:
+          type: String!
+        maxPlayers:
+          type: Int
+          default: 10
+      returns: MutationResult
+      preconditions: Authenticated guest
+      sideEffects: Creates Redis room; creator becomes host
+    joinRoom:
+      status: planned
+      arguments:
+        code:
+          type: String!
+        displayName:
+          type: String!
+      returns: MutationResult
+      preconditions: Room in LOBBY, not full
+    leaveRoom:
+      status: planned
+      arguments:
+        roomId:
+          type: ID!
+      returns: MutationResult
+    startGame:
+      status: planned
+      arguments:
+        roomId:
+          type: ID!
+      returns: MutationResult
+      preconditions: Host, LOBBY phase, at least 2 players
+      sideEffects: Deal hands, seed four rows, transition to SUBMIT
+    submitCard:
+      status: planned
+      arguments:
+        roomId:
+          type: ID!
+        cardId:
+          type: ID!
+      returns: MutationResult
+      preconditions: SUBMIT phase, card in hand, not already submitted
+      sideEffects: |
+        Locks submission server-side. When all active players submit, runs
+        `resolve_turn` (Rules A/B/C) and publishes updated views via Redis pub/sub.
+    updateDisplayName:
+      status: planned
+      arguments:
+        displayName:
+          type: String!
+      returns: MutationResult
+
+  subscriptions:
+    gameRoomUpdated:
+      status: planned
+      arguments:
+        roomId:
+          type: ID!
+      returns: GameRoomPublic!
+      description: Public room updates — identical payload for all listeners
+    myGameViewUpdated:
+      status: planned
+      arguments:
+        roomId:
+          type: ID!
+      returns: PlayerPrivateView!
+      description: |
+        Primary driver for the play screen. Player-specific view including hand
+        and submitted card. Must filter per WebSocket connection.
+
+x-mutation-semantics:
+  createRoom:
+    preconditions: [authenticated]
+    errors: [UNAUTHENTICATED]
+  joinRoom:
+    preconditions: [authenticated, phase_is_LOBBY, room_not_full]
+    errors: [UNAUTHENTICATED, ROOM_NOT_FOUND, ROOM_FULL, GAME_ALREADY_STARTED]
+  leaveRoom:
+    preconditions: [authenticated, player_in_room]
+    errors: [UNAUTHENTICATED, PLAYER_NOT_IN_ROOM]
+  startGame:
+    preconditions: [authenticated, is_host, phase_is_LOBBY, min_2_players]
+    errors: [UNAUTHENTICATED, NOT_HOST, INVALID_PHASE, PLAYER_NOT_IN_ROOM]
+  submitCard:
+    preconditions: [authenticated, phase_is_SUBMIT, card_in_hand, not_already_submitted]
+    errors: [UNAUTHENTICATED, INVALID_PHASE, CARD_NOT_IN_HAND, ALREADY_SUBMITTED, PLAYER_NOT_IN_ROOM]
+
+x-game-rules:
+  placement:
+    ruleA:
+      name: Normal placement
+      description: Place on the row whose last card is the greatest value still less than the played card
+    ruleB:
+      name: Row full
+      description: If the chosen row has 5 cards, player takes those 5 cards and the played card starts the row
+    ruleC:
+      name: Card too low
+      description: If the card is lower than all row tails, auto-select the row with fewest bones (tie-break lowest tail)
+  submissionBarrier:
+    description: All active players must submit before resolve_turn runs
+    timeoutSeconds: 30
+    autoPlay: lowest card in hand
