@@ -219,6 +219,7 @@ async function confirmLeave(): Promise<void> {
         :submit-deadline="submitDeadline"
         :last-resolved-plays="lastResolvedPlays"
         :players="players"
+        :my-player-id="myPlayerId"
         @deadline="handleDeadline"
         @leave="showLeaveConfirm = true"
       />

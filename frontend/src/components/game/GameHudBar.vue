@@ -14,6 +14,7 @@ const props = defineProps<{
   submitDeadline: string | null
   lastResolvedPlays?: ResolvedPlay[]
   players?: PlayerPublic[]
+  myPlayerId?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -41,10 +42,19 @@ function playerName(playerId: string): string {
   )
 }
 
+function isYou(playerId: string): boolean {
+  return props.myPlayerId !== null && props.myPlayerId === playerId
+}
+
+function playerLabel(playerId: string): string {
+  return isYou(playerId) ? 'YOU' : playerName(playerId)
+}
+
 function playTitle(play: ResolvedPlay): string {
+  const label = playerLabel(play.playerId)
   const bones =
-    play.bonesTaken > 0 ? `${play.bonesTaken} bones` : 'no bones taken'
-  return `${playerName(play.playerId)} · ${bones}`
+    play.bonesTaken > 0 ? `+${play.bonesTaken} bones` : 'no bones taken'
+  return `${label} · ${bones}`
 }
 </script>
 
@@ -93,9 +103,9 @@ function playTitle(play: ResolvedPlay): string {
 
     <div
       v-if="showLastResolve"
-      class="mt-3 flex flex-wrap items-end gap-3 border-t border-border pt-3"
+      class="mt-3 flex flex-wrap items-start gap-3 border-t border-border pt-3"
     >
-      <span class="text-[10px] uppercase tracking-wide text-muted">
+      <span class="pt-1 text-[10px] uppercase tracking-wide text-muted">
         Last resolve
       </span>
       <div
@@ -105,15 +115,27 @@ function playTitle(play: ResolvedPlay): string {
         :style="{ animationDelay: `${index * 80}ms` }"
         :title="playTitle(play)"
       >
-        <CardTile :card="play.card" size="sm" />
-        <span class="max-w-14 truncate text-[10px] text-text">
-          {{ playerName(play.playerId) }}
+        <div
+          class="rounded-md"
+          :class="
+            play.bonesTaken > 0
+              ? 'ring-2 ring-danger ring-offset-1 ring-offset-surface-raised'
+              : ''
+          "
+        >
+          <CardTile :card="play.card" size="sm" />
+        </div>
+        <span
+          class="max-w-14 truncate text-[10px] font-medium"
+          :class="isYou(play.playerId) ? 'text-accent' : 'text-text'"
+        >
+          {{ playerLabel(play.playerId) }}
         </span>
         <span
           v-if="play.bonesTaken > 0"
           class="text-[10px] tabular-nums text-danger"
         >
-          {{ play.bonesTaken }}🦴
+          +{{ play.bonesTaken }} 🦴
         </span>
       </div>
     </div>
