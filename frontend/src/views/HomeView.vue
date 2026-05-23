@@ -9,6 +9,7 @@ import RoomCodeInput from '@/components/lobby/RoomCodeInput.vue'
 import RulesDrawer from '@/components/lobby/RulesDrawer.vue'
 import { CREATE_ROOM, JOIN_ROOM } from '@/graphql/operations'
 import type { MutationResult } from '@/graphql/types'
+import { useDisplayName } from '@/composables/useDisplayName'
 import { useGuestSession } from '@/composables/useGuestSession'
 import { useToast } from '@/composables/useToast'
 
@@ -16,8 +17,7 @@ const router = useRouter()
 const route = useRoute()
 const { isReady, isLoading: sessionLoading } = useGuestSession()
 const { push: pushToast } = useToast()
-
-const displayName = ref('')
+const { displayName, rememberDisplayName } = useDisplayName()
 const joinCode = ref(typeof route.query.join === 'string' ? route.query.join.toUpperCase() : '')
 const isSubmitting = ref(false)
 
@@ -53,10 +53,13 @@ async function createRoom(): Promise<void> {
     return
   }
 
+  const name = displayName.value.trim()
+  rememberDisplayName(name)
+
   isSubmitting.value = true
   try {
     const result = await createRoomMutation.executeMutation({
-      displayName: displayName.value.trim(),
+      displayName: name,
     })
     await handleMutationResult(result.data?.createRoom as MutationResult | undefined, (roomId) => {
       void router.push({ name: 'lobby', params: { roomId } })
@@ -79,11 +82,14 @@ async function joinRoom(code = joinCode.value): Promise<void> {
     return
   }
 
+  const name = displayName.value.trim()
+  rememberDisplayName(name)
+
   isSubmitting.value = true
   try {
     const result = await joinRoomMutation.executeMutation({
       code: code.toUpperCase(),
-      displayName: displayName.value.trim(),
+      displayName: name,
     })
     await handleMutationResult(result.data?.joinRoom as MutationResult | undefined, (roomId) => {
       void router.push({ name: 'lobby', params: { roomId } })

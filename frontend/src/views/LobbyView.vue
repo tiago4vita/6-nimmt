@@ -15,6 +15,7 @@ import RulesDrawer from '@/components/lobby/RulesDrawer.vue'
 import { UPDATE_DISPLAY_NAME } from '@/graphql/operations'
 import type { MutationResult } from '@/graphql/types'
 import { isPlayPhase } from '@/graphql/types'
+import { useDisplayName } from '@/composables/useDisplayName'
 import { useGameRoom } from '@/composables/useGameRoom'
 import { useToast } from '@/composables/useToast'
 
@@ -24,6 +25,7 @@ const props = defineProps<{
 
 const router = useRouter()
 const { push: pushToast } = useToast()
+const { rememberDisplayName } = useDisplayName()
 
 const {
   room,
@@ -115,6 +117,7 @@ async function saveDisplayName(): Promise<void> {
     applyView(payload.view)
   }
 
+  rememberDisplayName(trimmed)
   isEditingName.value = false
   pushToast('Display name updated')
 }

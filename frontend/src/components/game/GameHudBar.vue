@@ -30,25 +30,21 @@ const phaseLabels: Record<GamePhase, string> = {
   FINISHED: 'Finished',
 }
 
-const penaltyPlays = computed(() =>
-  (props.lastResolvedPlays ?? []).filter((play) => play.bonesTaken > 0),
-)
+const resolvedPlays = computed(() => props.lastResolvedPlays ?? [])
 
-const showLastResolve = computed(() => {
-  if (penaltyPlays.value.length === 0) {
-    return false
-  }
-  if (!props.phase) {
-    return true
-  }
-  return props.phase !== 'SUBMIT' && props.phase !== 'LOBBY'
-})
+const showLastResolve = computed(() => resolvedPlays.value.length > 0)
 
 function playerName(playerId: string): string {
   return (
     props.players?.find((player) => player.id === playerId)?.displayName ??
     'Player'
   )
+}
+
+function playTitle(play: ResolvedPlay): string {
+  const bones =
+    play.bonesTaken > 0 ? `${play.bonesTaken} bones` : 'no bones taken'
+  return `${playerName(play.playerId)} · ${bones}`
 }
 </script>
 
@@ -57,7 +53,15 @@ function playerName(playerId: string): string {
     class="rounded-md border border-border bg-surface-raised px-4 py-3"
   >
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <div class="flex items-center gap-4 text-sm">
+      <div class="flex items-center gap-3 text-sm">
+        <IconButton
+          :icon="ArrowLeft"
+          ariaLabel="Leave room"
+          title="Leave room (Esc)"
+          size="sm"
+          @click="emit('leave')"
+        />
+        <div class="h-8 w-px bg-border" />
         <div>
           <div class="text-[10px] uppercase tracking-wide text-muted">Round</div>
           <div class="font-medium tabular-nums text-text">{{ roundNumber }}</div>
@@ -78,22 +82,13 @@ function playerName(playerId: string): string {
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <SubmitCountdown
-          :deadline="submitDeadline"
-          :phase="phase"
-          :size="48"
-          :stroke-width="4"
-          @deadline="emit('deadline')"
-        />
-        <IconButton
-          :icon="ArrowLeft"
-          ariaLabel="Leave room"
-          title="Leave room (Esc)"
-          size="sm"
-          @click="emit('leave')"
-        />
-      </div>
+      <SubmitCountdown
+        :deadline="submitDeadline"
+        :phase="phase"
+        :size="48"
+        :stroke-width="4"
+        @deadline="emit('deadline')"
+      />
     </div>
 
     <div
@@ -104,17 +99,20 @@ function playerName(playerId: string): string {
         Last resolve
       </span>
       <div
-        v-for="(play, index) in penaltyPlays"
+        v-for="(play, index) in resolvedPlays"
         :key="`${play.playerId}-${play.card.id}-${index}`"
         class="flex flex-col items-center gap-1 resolve-feed-item"
         :style="{ animationDelay: `${index * 80}ms` }"
-        :title="`${playerName(play.playerId)} · ${play.bonesTaken} bones`"
+        :title="playTitle(play)"
       >
         <CardTile :card="play.card" size="sm" />
         <span class="max-w-14 truncate text-[10px] text-text">
           {{ playerName(play.playerId) }}
         </span>
-        <span class="text-[10px] tabular-nums text-danger">
+        <span
+          v-if="play.bonesTaken > 0"
+          class="text-[10px] tabular-nums text-danger"
+        >
           {{ play.bonesTaken }}🦴
         </span>
       </div>
