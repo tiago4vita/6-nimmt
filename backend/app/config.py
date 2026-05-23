@@ -11,6 +11,12 @@ class Settings(BaseSettings):
     session_secret: str = "dev-only-change-me"
     log_level: str = "info"
 
+    session_ttl_days: int = 7
+    room_ttl_hours: int = 24
+    lobby_stale_hours: int = 2
+    submit_timeout_seconds: int = 30
+    disconnect_grace_seconds: int = 5
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def normalize_cors_origins(cls, value: str | list[str]) -> str:
