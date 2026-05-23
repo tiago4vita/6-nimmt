@@ -81,8 +81,9 @@ class GamePhase(str, Enum):
     FINISHED = "FINISHED"     # Game over, show results
 ```
 
-- `DEAL`, `RESOLVE`, `SCORE` are **transient** — client may only observe them briefly via subscription
-- Public phase exposed to clients: `LOBBY`, `SUBMIT`, `FINISHED` (+ optional `DEAL`/`RESOLVE` for animations)
+- `DEAL`, `RESOLVE`, `SCORE` exist in the domain enum for clarity and future animation hooks
+- **As implemented (M2):** `start_game()` jumps LOBBY → SUBMIT atomically; `resolve_turn()` uses transient `RESOLVE` internally then returns to `SUBMIT` or `FINISHED`. Clients will not observe `DEAL`/`SCORE` until M3/M4 expose phase transitions for UI overlays
+- Public phases to expose via GraphQL (M3): `LOBBY`, `SUBMIT`, `FINISHED` (+ optional `DEAL`/`RESOLVE`/`SCORE` for animations in M4)
 
 ## Simultaneous Submission Barrier
 
@@ -101,10 +102,14 @@ When |submissions| == |active_players|:
 
 ### Active players
 
-- **Active:** connected and not marked `left`
-- **Disconnected mid-submit:** submission stands if already sent; if not sent before timeout → auto-pick (see Edge Cases)
+- **Domain:** `PlayerState.is_active` — included in submission barrier via `active_player_ids`
+- **Infrastructure:** `PlayerInRoom.is_connected` — UI presence flag; `reconnect()` / `mark_disconnected()` (disconnect grace M3)
+- **As implemented (M2):** adapter maps all seated players to `is_active=True`; submit barrier waits for **all seated players** (not filtered by `is_connected`). Disconnected players who haven't submitted are auto-played on the 30s submit timeout
+- **Left lobby:** player removed in LOBBY; mid-game leave sets `is_connected=false` but keeps seat
 
 ## Domain Module Structure
+
+**Status:** M1 complete — implemented and covered by `backend/tests/test_domain.py`.
 
 ```
 backend/app/domain/

@@ -18,12 +18,16 @@
 ```
 frontend/src/
   main.ts
-  App.vue
-  style.css              # @import "tailwindcss"
+  App.vue                 # Placeholder — light neutral landing, not dark design spec
+  style.css               # @import "tailwindcss" only
   vite-env.d.ts
   graphql/
-    client.ts
+    client.ts             # URQL + graphql-ws; no operations called yet
+  lib/
+    guest-session.ts      # Reads 6nimmt_guest from localStorage; does NOT mint sessions
 ```
+
+**Gap:** Nothing writes to `localStorage` until M4 `useGuestSession` calls GraphQL `ensureGuestSession`.
 
 **Target layout** (add as features land):
 

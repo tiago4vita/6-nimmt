@@ -1,5 +1,17 @@
 # Authentication — Anonymous Guest Sessions
 
+## Implementation status (M2)
+
+| Component | Status | Location |
+|---|---|---|
+| Session mint/validate/touch | ✅ Implemented | `backend/app/infrastructure/sessions.py` |
+| Bearer + `X-Guest-Id` extraction | ✅ Implemented | `backend/app/infrastructure/auth.py` |
+| `get_current_guest()` | ✅ Implemented | Not wired to GraphQL context yet (M3) |
+| GraphQL `ensureGuestSession` | ⬜ M3 | Client cannot mint sessions today |
+| Frontend session bootstrap | ⬜ M4 | `guest-session.ts` reads localStorage only |
+
+**Token model:** Option A (UUID + opaque bearer + SHA-256 hash in Redis). `SESSION_SECRET` in config is **unused** — reserved for optional JWT (Option B) later.
+
 ## v1 Scope
 
 - **No** user accounts, passwords, OAuth, or email
@@ -82,25 +94,21 @@ Backend reads the same validation path as HTTP middleware.
 
 ## Backend Validation Middleware
 
+**Implemented** in `backend/app/infrastructure/auth.py`:
+
 ```python
-async def get_current_guest(request) -> GuestContext:
-    token = extract_bearer(request)
-    if not token:
-        raise Unauthenticated
+async def get_current_guest(headers, *, client=None) -> GuestContext:
+    token = extract_bearer(headers)
+    guest_id = extract_guest_id(headers)
+    if not token or not guest_id:
+        raise UnauthenticatedError("Missing bearer token or X-Guest-Id header")
 
-    guest_id = extract_guest_id(request)  # from token payload or lookup
-    session = await redis.get_session(guest_id)
-
-    if not session or not verify_hash(token, session.token_hash):
-        raise Unauthenticated
-    if session.expires_at < now():
-        raise SessionExpired
-
-    await redis.touch_session(guest_id)
-    return GuestContext(guest_id=guest_id, ...)
+    session = await sessions.validate_token(guest_id, token, client=client)
+    await sessions.touch_session(guest_id, client=client)
+    return GuestContext(guest_id=session.guest_id, display_name=session.display_name)
 ```
 
-Fail closed: missing/invalid → GraphQL error extension `UNAUTHENTICATED`.
+**M3:** Wire via Strawberry `get_context` on HTTP and WebSocket. Fail closed: missing/invalid → GraphQL error extension `UNAUTHENTICATED`.
 
 ## Token Format Options
 
@@ -145,10 +153,16 @@ Guests **not** in a room may still call `ensureGuestSession` and `roomByCode` (p
 
 ## Reconnect & Identity Recovery
 
+**Infrastructure (M2):** `game.reconnect()` matches `guestId` to seat and sets `isConnected = true`; cancels pending disconnect timer.
+
+**Not wired yet (M3):** WebSocket connect/disconnect must call `reconnect` / `schedule_disconnect`. Until then, clients cannot trigger reconnect through the API.
+
+Target client flow:
+
 1. Client loads `localStorage` session
 2. If expired → call `ensureGuestSession` (creates **new** guest — old seat lost unless post-MVP seat recovery)
 3. If valid → reconnect WebSocket, call `myGameView(roomId)`
-4. Server matches `guestId` to seat in Redis room → mark `isConnected = true`
+4. Server matches `guestId` to seat in Redis room → `reconnect()` marks `isConnected = true`
 
 **Portfolio limitation:** Clearing localStorage mid-game creates a new guest — acceptable for v1; document in UI.
 

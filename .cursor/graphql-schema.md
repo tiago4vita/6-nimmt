@@ -1,5 +1,16 @@
 # GraphQL Schema
 
+## Implementation status
+
+**M3 — not started.** Only `query { health }` exists in `backend/app/main.py`. Infrastructure services (`sessions`, `rooms`, `game`) are ready to be called from resolvers. OpenAPI contract: `backend/openapi.yaml`.
+
+**M3 must also:**
+
+- Populate `last_resolution` when building views (field exists on Redis model but is currently always `null`)
+- Wire `SubscriberRegistry` → `gameRoomUpdated` / `myGameViewUpdated`
+- Wire WS disconnect → `schedule_disconnect` (see [state-management.md](./state-management.md))
+- Map `InfrastructureError.code` → `GameErrorCode` extensions (no raw exceptions for rule violations)
+
 ## Design Principles
 
 1. **Separate public and private views** — Never expose `GameRoom` with optional hidden fields; use distinct types.

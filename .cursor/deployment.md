@@ -4,6 +4,8 @@
 
 Portfolio/local development only. Single `docker-compose.yml` at repository root runs all services. No Kubernetes, cloud IaC, or production hardening.
 
+**Runtime note:** Postgres is started by Compose but **not used by the backend yet** (M2.7). Redis is **required** for backend tests and live game infrastructure. Run uvicorn with **one worker** for MVP (in-process locks/timers — see [state-management.md](./state-management.md#single-worker-limitations-mvp)).
+
 ## Services
 
 ```mermaid
@@ -113,11 +115,11 @@ volumes:
 
 | Variable | Required | Example | Description |
 |---|---|---|---|
-| `DATABASE_URL` | Yes | `postgresql+asyncpg://nimmt:nimmt@postgres:5432/nimmt` | Async SQLAlchemy URL |
-| `REDIS_URL` | Yes | `redis://redis:6379/0` | Redis connection |
+| `DATABASE_URL` | Declared | `postgresql+asyncpg://nimmt:nimmt@postgres:5432/nimmt` | **Unused until M2.7** — async SQLAlchemy URL |
+| `REDIS_URL` | Yes | `redis://redis:6379/0` | Redis connection — **required** for game infrastructure |
 | `CORS_ORIGINS` | Yes | `http://localhost:5173` | Comma-separated string (parsed in `app.config`) |
-| `SESSION_SECRET` | Yes | random string | Used if JWT signing added later |
-| `LOG_LEVEL` | No | `info` | uvicorn logging |
+| `SESSION_SECRET` | Declared | random string | **Unused** — reserved for optional JWT signing (Option B in auth.md) |
+| `LOG_LEVEL` | No | `info` | Declared in config; not wired to uvicorn logging yet |
 
 ### Frontend
 
@@ -203,6 +205,20 @@ npm run dev
 
 Open `http://localhost:5173` (frontend) and `http://localhost:8000/graphql` (GraphQL playground / health query).
 
+### Backend tests
+
+Integration tests require Redis. Default test DB: `redis://localhost:6379/15` (override with `TEST_REDIS_URL`).
+
+```bash
+docker compose up redis -d
+cd backend
+python -m pytest
+```
+
+Tests skip automatically if Redis is unreachable. No CI pipeline yet — run locally before merging M3+.
+
+**Dev hygiene:** set `asyncio_default_fixture_loop_scope = "function"` in `pyproject.toml` `[tool.pytest.ini_options]` to silence pytest-asyncio deprecation warnings.
+
 ## Database Migrations
 
 Run on backend startup (dev only) or manually:
@@ -225,8 +241,10 @@ Do **not** auto-migrate in production — irrelevant for this project.
 
 1. `docker compose up --build`
 2. Open `http://localhost:5173`
-3. Two browser windows → create room → join with code → play full game
-4. Optional: show match row in Postgres via `psql`
+3. Two browser windows → create room → join with code → play full game **(blocked until M3 + M4)**
+4. Optional: show match row in Postgres via `psql` **(blocked until M2.7)**
+
+**Available today:** GraphQL `health`, REST `/health`, 67 backend pytest against Redis.
 
 ## Cross-References
 

@@ -13,6 +13,21 @@ This directory is the **single source of truth** for architecture, game rules, a
 | Auth (v1) | Anonymous guest sessions (UUID + token) |
 | Deploy (v1) | Local Docker Compose only |
 
+## Implementation Snapshot
+
+**Last reviewed:** 2026-05-23
+
+| Milestone | Status |
+|---|---|
+| M0 Scaffold | ✅ Done |
+| M1 Domain engine | ✅ Done |
+| M2 Infrastructure (Redis) | ✅ Done — not yet exposed via GraphQL |
+| M3 GraphQL API | ⬜ **Current focus** |
+| M4 Frontend core | ⬜ Not started |
+| M5 Playable MVP | ⬜ Blocked on M3 + M4 |
+
+Partial implementations and blockers: [architecture-overview.md](./architecture-overview.md#known-gaps--mvp-blockers).
+
 ## Document Index
 
 | File | Purpose | Read when… |
@@ -46,21 +61,23 @@ This directory is the **single source of truth** for architecture, game rules, a
 ├── .cursor/              # This documentation
 ├── backend/
 │   ├── app/
-│   │   ├── config.py     # pydantic-settings (implemented)
-│   │   ├── main.py       # FastAPI + health GraphQL (implemented)
-│   │   ├── domain/       # Pure game logic (planned)
-│   │   ├── graphql/      # Strawberry schema, resolvers, dataloaders (planned)
-│   │   └── infrastructure/  # Redis, PostgreSQL, pub/sub (planned)
-│   ├── tests/
+│   │   ├── config.py        # pydantic-settings (implemented)
+│   │   ├── main.py          # FastAPI + Redis lifespan + health GraphQL (implemented)
+│   │   ├── domain/          # Pure game logic — cards, rows, game, resolve, scoring (implemented)
+│   │   ├── infrastructure/  # Redis client, sessions, rooms, game orchestration, pub/sub, timers (implemented)
+│   │   └── graphql/         # Strawberry schema, resolvers, dataloaders (planned — M3)
+│   ├── tests/               # 67 pytest (domain + infrastructure + openapi)
+│   ├── openapi.yaml         # Contract reference (most ops: planned)
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── pyproject.toml
 ├── frontend/
 │   ├── src/
-│   │   ├── App.vue
+│   │   ├── App.vue          # Placeholder landing (M4 pending)
 │   │   ├── main.ts
-│   │   ├── style.css     # Tailwind v4 entry
+│   │   ├── style.css        # Tailwind v4 entry
 │   │   ├── graphql/client.ts
+│   │   ├── lib/guest-session.ts  # Read-only auth headers (M4 will write session)
 │   │   ├── composables/  # planned
 │   │   ├── components/   # planned
 │   │   └── views/        # planned
@@ -95,8 +112,10 @@ Run infrastructure + apps — see [deployment.md](./deployment.md).
 
 See **[roadmap.md](./roadmap.md)** for the full checklist, milestones (M0–M7), and sprint plan. Critical path:
 
-1. `backend/app/domain/` — Pure game engine + unit tests
-2. Redis live-state layer + guest auth
-3. GraphQL queries, mutations, subscriptions
+1. ~~`backend/app/domain/` — Pure game engine + unit tests~~ ✅
+2. ~~Redis live-state layer + guest auth~~ ✅
+3. **GraphQL queries, mutations, subscriptions** ← current
 4. Vue frontend: home → lobby → play
-5. PostgreSQL persistence for completed matches (non-blocking for MVP)
+5. PostgreSQL persistence for completed matches (non-blocking for MVP; deps declared but unused)
+
+**Testing:** Backend tests require Redis (`redis://localhost:6379/15` by default). Run `pytest` from `backend/` after `docker compose up redis` or full stack.

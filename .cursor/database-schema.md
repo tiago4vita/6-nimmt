@@ -1,5 +1,9 @@
 # Database Schema (PostgreSQL)
 
+## Implementation status
+
+**Not started (M2.7).** `sqlmodel`, `asyncpg`, and `alembic` are declared in `backend/pyproject.toml`; `DATABASE_URL` exists in config. No `db.py`, models, or migrations in the codebase yet. Live games run entirely on Redis until `FINISHED` persistence is implemented.
+
 ## Scope (v1)
 
 PostgreSQL is **not** required for the core multiplayer demo loop — Redis alone can run live games. Persist to PostgreSQL when:

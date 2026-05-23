@@ -1,5 +1,22 @@
 # Frontend Stack
 
+## Current scaffold status
+
+**Last reviewed:** 2026-05-23
+
+| Item | Status |
+|---|---|
+| Vite + Vue 3 + TypeScript + Tailwind v4 | ✅ Wired |
+| URQL HTTP + WebSocket client | ✅ `src/graphql/client.ts` |
+| Auth headers from localStorage | ✅ Read-only via `src/lib/guest-session.ts` |
+| `ensureGuestSession` / GraphQL operations | ⬜ M3 + M4 |
+| Vue Router | ⬜ Installed, not wired |
+| `@vueuse/core` | ⬜ Installed, unused |
+| Design system (Inter, Lucide, dark theme) | ⬜ M4/M6 |
+| `App.vue` | Placeholder light landing — not design-spec UI |
+
+**Cleanup note:** both `vite.config.ts` and `vite.config.js` exist; prefer `.ts` and remove duplicate when touching config.
+
 ## Locked-In Decisions
 
 | Category | Choice | Version policy |
