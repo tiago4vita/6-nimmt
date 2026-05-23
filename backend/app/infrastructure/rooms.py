@@ -12,8 +12,8 @@ from app.domain.game import GamePhase
 from app.infrastructure import pubsub
 from app.infrastructure import redis as redis_keys
 from app.infrastructure.errors import (
+    GameAlreadyStartedError,
     InvalidDisplayNameError,
-    InvalidPhaseError,
     NotSeatedError,
     RoomCodeCollisionError,
     RoomFullError,
@@ -202,7 +202,7 @@ async def join_room(
             return fresh
 
         if fresh.phase != GamePhase.LOBBY:
-            raise InvalidPhaseError("Cannot join a room that is no longer in lobby")
+            raise GameAlreadyStartedError("Cannot join a room that is no longer in lobby")
         if len(fresh.players) >= fresh.max_players:
             raise RoomFullError("Room is full")
 

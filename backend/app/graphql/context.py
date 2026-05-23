@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+from graphql import GraphQLError
 from strawberry.fastapi import BaseContext
 
 from app.infrastructure import sessions
 from app.infrastructure.auth import extract_bearer, extract_guest_id
-from app.infrastructure.errors import UnauthenticatedError
 from app.infrastructure.models import GuestContext
 
 
@@ -67,7 +67,12 @@ class GraphQLContext(BaseContext):
     async def require_guest(self) -> GuestContext:
         guest = await self.resolve_guest()
         if guest is None:
-            raise UnauthenticatedError("Authentication required")
+            if self.response is not None:
+                self.response.status_code = 401
+            raise GraphQLError(
+                "Authentication required",
+                extensions={"code": "UNAUTHENTICATED"},
+            )
         return guest
 
 

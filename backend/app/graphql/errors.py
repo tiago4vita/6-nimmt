@@ -5,6 +5,7 @@ import enum
 from app.infrastructure.errors import (
     AlreadySubmittedError,
     CardNotInHandError,
+    GameAlreadyStartedError,
     InfrastructureError,
     InvalidDisplayNameError,
     InvalidPhaseError,
@@ -44,6 +45,7 @@ _EXCEPTION_TO_CODE: dict[type[InfrastructureError], GameErrorCode] = {
     RoomFullError: GameErrorCode.ROOM_FULL,
     RoomCodeCollisionError: GameErrorCode.ROOM_CODE_COLLISION,
     InvalidPhaseError: GameErrorCode.INVALID_PHASE,
+    GameAlreadyStartedError: GameErrorCode.GAME_ALREADY_STARTED,
     NotHostError: GameErrorCode.NOT_HOST,
     NotSeatedError: GameErrorCode.PLAYER_NOT_IN_ROOM,
     AlreadySubmittedError: GameErrorCode.ALREADY_SUBMITTED,

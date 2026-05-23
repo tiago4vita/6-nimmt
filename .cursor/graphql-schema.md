@@ -2,14 +2,14 @@
 
 ## Implementation status
 
-**M3 — not started.** Only `query { health }` exists in `backend/app/main.py`. Infrastructure services (`sessions`, `rooms`, `game`) are ready to be called from resolvers. OpenAPI contract: `backend/openapi.yaml`.
+**M3 — complete.** Full schema in `backend/app/graphql/` — queries, mutations, subscriptions, public/private view builders. OpenAPI contract: `backend/openapi.yaml`.
 
-**M3 must also:**
+**Delivered in M3:**
 
-- Populate `last_resolution` when building views (field exists on Redis model but is currently always `null`)
-- Wire `SubscriberRegistry` → `gameRoomUpdated` / `myGameViewUpdated`
-- Wire WS disconnect → `schedule_disconnect` (see [state-management.md](./state-management.md))
-- Map `InfrastructureError.code` → `GameErrorCode` extensions (no raw exceptions for rule violations)
+- `last_resolution` populated via `apply_game_state` during turn resolve
+- `SubscriberRegistry` → `gameRoomUpdated` / `myGameViewUpdated`
+- WS disconnect → `schedule_disconnect` on subscription teardown; `reconnect` on subscribe
+- `InfrastructureError.code` → `GameErrorCode` in mutation payloads; HTTP 401 for auth failures
 
 ## Design Principles
 

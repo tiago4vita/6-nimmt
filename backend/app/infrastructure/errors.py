@@ -31,6 +31,10 @@ class InvalidPhaseError(InfrastructureError):
     code = "INVALID_PHASE"
 
 
+class GameAlreadyStartedError(InfrastructureError):
+    code = "GAME_ALREADY_STARTED"
+
+
 class NotHostError(InfrastructureError):
     code = "NOT_HOST"
 

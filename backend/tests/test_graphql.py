@@ -1,15 +1,34 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
 import pytest
+import pytest_asyncio
+import strawberry
 from redis.asyncio import Redis
+from strawberry.types import Info
 
 from app.config import settings
+from app.graphql.context import GraphQLContext
+from app.graphql.subscriptions import Subscription
+from app.infrastructure import pubsub
 from app.main import app
 
 pytestmark = pytest.mark.asyncio
+
+
+@pytest_asyncio.fixture
+async def pubsub_listener(redis_client: Redis) -> AsyncIterator[None]:
+    pubsub.registry.clear()
+    await pubsub.listener.start()
+    try:
+        yield
+    finally:
+        await pubsub.listener.stop()
+        pubsub.registry.clear()
 
 
 @pytest.fixture
@@ -183,13 +202,15 @@ async def test_ensure_guest_session_mints_and_reuses(client: httpx.AsyncClient) 
 
 async def test_mutation_requires_authentication(client: httpx.AsyncClient) -> None:
     async with client:
-        payload = await _gql(
-            client,
-            'mutation { createRoom(displayName: "Anon") { success errors { code } } }',
+        response = await client.post(
+            "/graphql",
+            json={"query": 'mutation { createRoom(displayName: "Anon") { success errors { code } } }'},
         )
+    assert response.status_code == 401, response.text
+    payload = response.json()
     assert payload.get("errors")
     extensions = payload["errors"][0].get("extensions") or {}
-    assert "Authentication required" in payload["errors"][0]["message"] or extensions
+    assert extensions.get("code") == "UNAUTHENTICATED"
 
 
 async def test_create_room_returns_private_view(client: httpx.AsyncClient) -> None:
@@ -382,3 +403,134 @@ async def test_update_display_name_succeeds(client: httpx.AsyncClient) -> None:
     payload = result["data"]["updateDisplayName"]
     assert payload["success"] is True
     assert payload["errors"] == []
+
+
+async def test_join_started_room_returns_game_already_started(
+    client: httpx.AsyncClient,
+) -> None:
+    async with client:
+        host_id, host_token = await _ensure_guest(client)
+        guest_id, guest_token = await _ensure_guest(client)
+
+        host_create = await _create_room(client, host_token, host_id, name="Alice")
+        code = host_create["view"]["room"]["code"]
+        room_id = host_create["view"]["room"]["id"]
+
+        await _join_room(client, guest_token, guest_id, code, "Bob")
+        await _start_game(client, host_token, host_id, room_id)
+
+        late_id, late_token = await _ensure_guest(client)
+        result = await _join_room(client, late_token, late_id, code, "Charlie")
+
+    assert result["success"] is False
+    assert result["errors"][0]["code"] == "GAME_ALREADY_STARTED"
+
+
+@dataclass
+class _MockInfo:
+    context: GraphQLContext
+
+
+def _subscription_context(token: str, guest_id: str) -> _MockInfo:
+    ctx = GraphQLContext()
+    ctx.connection_params = {
+        "authorization": f"Bearer {token}",
+        "guestId": guest_id,
+    }
+    return _MockInfo(context=ctx)
+
+
+async def _collect_subscription_events(
+    info: Info[GraphQLContext, None],
+    room_id: str,
+    *,
+    field: str,
+    count: int,
+) -> list[Any]:
+    subscription = Subscription()
+    if field == "my_game_view_updated":
+        stream = subscription.my_game_view_updated(info, strawberry.ID(room_id))
+    else:
+        stream = subscription.game_room_updated(info, strawberry.ID(room_id))
+
+    events: list[Any] = []
+    async for payload in stream:
+        events.append(payload)
+        if len(events) >= count:
+            break
+    return events
+
+
+async def test_subscription_my_game_view_updated_on_resolve(
+    client: httpx.AsyncClient,
+    pubsub_listener: None,
+) -> None:
+    async with client:
+        host_id, host_token = await _ensure_guest(client)
+        guest_id, guest_token = await _ensure_guest(client)
+
+        host_create = await _create_room(client, host_token, host_id, name="Alice")
+        room_id = host_create["view"]["room"]["id"]
+        code = host_create["view"]["room"]["code"]
+
+        await _join_room(client, guest_token, guest_id, code, "Bob")
+        start_result = await _start_game(client, host_token, host_id, room_id)
+        assert start_result["success"] is True
+
+        host_card = start_result["view"]["myHand"][0]["id"]
+        guest_card = (
+            await _gql(
+                client,
+                "query($r: ID!) { myGameView(roomId: $r) { myHand { id } } }",
+                variables={"r": room_id},
+                token=guest_token,
+                guest_id=guest_id,
+            )
+        )["data"]["myGameView"]["myHand"][0]["id"]
+
+        info = _subscription_context(host_token, host_id)
+        stream = Subscription().my_game_view_updated(info, strawberry.ID(room_id))
+        initial = await stream.__anext__()
+        assert initial.room.phase.value == "SUBMIT"
+        assert len(initial.my_hand) == 10
+        assert initial.my_submitted_card is None
+
+        await _submit_card(client, host_token, host_id, room_id, host_card)
+        after_host = await stream.__anext__()
+        assert after_host.my_submitted_card is not None
+        assert after_host.room.submission_progress.submitted == 1
+
+        resolve_result = await _submit_card(
+            client, guest_token, guest_id, room_id, guest_card
+        )
+        after_resolve = await stream.__anext__()
+
+    assert resolve_result["success"] is True
+    assert len(resolve_result["view"]["lastResolvedPlays"]) == 2
+    assert len(after_resolve.last_resolved_plays) == 2
+    assert after_resolve.room.phase.value in {"SUBMIT", "FINISHED"}
+
+
+async def test_game_room_updated_public_subscription(
+    client: httpx.AsyncClient,
+    pubsub_listener: None,
+) -> None:
+    async with client:
+        host_id, host_token = await _ensure_guest(client)
+        guest_id, guest_token = await _ensure_guest(client)
+
+        host_create = await _create_room(client, host_token, host_id, name="Alice")
+        room_id = host_create["view"]["room"]["id"]
+        code = host_create["view"]["room"]["code"]
+        await _join_room(client, guest_token, guest_id, code, "Bob")
+
+        info = _subscription_context(host_token, host_id)
+        events = await _collect_subscription_events(
+            info, room_id, field="game_room_updated", count=1
+        )
+
+    public_room = events[0]
+    assert public_room.phase.value == "LOBBY"
+    assert len(public_room.players) == 2
+    for player in public_room.players:
+        assert player.cards_in_hand == 0

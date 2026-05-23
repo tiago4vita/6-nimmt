@@ -8,8 +8,8 @@ from redis.asyncio import Redis
 from app.domain.game import GamePhase
 from app.infrastructure import redis as redis_keys, rooms
 from app.infrastructure.errors import (
+    GameAlreadyStartedError,
     InvalidDisplayNameError,
-    InvalidPhaseError,
     NotSeatedError,
     RoomFullError,
     RoomNotFoundError,
@@ -132,7 +132,7 @@ async def test_join_rejects_active_room(redis_client: Redis) -> None:
         redis_keys.room_key(fresh.id), fresh.model_dump(mode="json"), ttl_seconds=3600
     )
 
-    with pytest.raises(InvalidPhaseError):
+    with pytest.raises(GameAlreadyStartedError):
         await rooms.join_room(code=host_room.code, guest_id="g2", display_name="Bob")
 
 
