@@ -6,7 +6,9 @@ import { ArrowLeft } from 'lucide-vue-next'
 
 import AppShell from '@/components/layout/AppShell.vue'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog.vue'
-import ReconnectBanner from '@/components/feedback/ReconnectBanner.vue'
+import ConnectionStatusBanner from '@/components/feedback/ConnectionStatusBanner.vue'
+import IconButton from '@/components/layout/IconButton.vue'
+import LoadingShell from '@/components/layout/LoadingShell.vue'
 import CopyRoomActions from '@/components/lobby/CopyRoomActions.vue'
 import PlayerList from '@/components/lobby/PlayerList.vue'
 import RulesDrawer from '@/components/lobby/RulesDrawer.vue'
@@ -120,22 +122,18 @@ async function saveDisplayName(): Promise<void> {
 
 <template>
   <AppShell>
-    <ReconnectBanner :visible="isReconnecting && !isLoading" />
+    <ConnectionStatusBanner :is-reconnecting="isReconnecting && !isLoading" />
 
-    <div v-if="isLoading" class="flex min-h-[40vh] items-center justify-center text-sm text-muted">
-      Loading lobby…
-    </div>
+    <LoadingShell v-if="isLoading" variant="lobby" label="Loading lobby" />
 
     <div v-else-if="room" class="space-y-6">
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 text-sm text-muted hover:text-text"
+        <IconButton
+          :icon="ArrowLeft"
+          ariaLabel="Leave room"
+          title="Leave room"
           @click="showLeaveConfirm = true"
-        >
-          <ArrowLeft class="size-4" aria-hidden="true" />
-          Leave
-        </button>
+        />
         <div class="text-center">
           <div class="text-xs uppercase tracking-wide text-muted">Room code</div>
           <div class="text-2xl font-semibold tracking-[0.2em] text-accent">{{ room.code }}</div>
@@ -167,7 +165,7 @@ async function saveDisplayName(): Promise<void> {
             />
             <button
               type="button"
-              class="rounded-md bg-accent px-3 py-2 text-sm font-medium text-black"
+              class="btn btn-primary"
               @click="saveDisplayName"
             >
               Save
@@ -184,7 +182,8 @@ async function saveDisplayName(): Promise<void> {
           <button
             v-if="isHost"
             type="button"
-            class="mt-6 w-full rounded-md bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            class="btn btn-primary mt-6 w-full py-3"
+            :class="canStart && !isStarting ? 'motion-safe:animate-pulse' : ''"
             :disabled="!canStart || isStarting"
             @click="handleStartGame"
           >

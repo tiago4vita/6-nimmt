@@ -55,7 +55,7 @@ frontend/src/
       GameRow.vue
       GameBoard.vue
       PlayerStrip.vue
-      SubmissionProgress.vue
+      SubmissionProgress.vue  # M4 — replace with PlayerStrip highlights (M6, ux-audit.md)
       PhaseIndicator.vue
       ResolveFeed.vue           # Staggered lastResolvedPlays reveal
       SubmitCountdown.vue       # Activated only if backend exposes a deadline
@@ -118,7 +118,19 @@ Boot in `App.vue` or router guard before any GraphQL call.
 
 ### `useCardSelection`
 
-Local UI state for hover/selected card before submit. Clears when `mySubmittedCard` becomes non-null from server.
+Local UI state for hover/selected card **before confirm**. Clears when `mySubmittedCard` becomes non-null from server.
+
+Flow: click card → `selectCard` → user confirms via confirm bar → `submitSelectedCard`. On client deadline with a selection pending, auto-call `submitSelectedCard`.
+
+### `useGameShortcuts` (M6)
+
+Scoped keyboard handler for `GameView`:
+
+- `1`–`N` → `selectCardByIndex`
+- `Enter` → confirm selected card (SUBMIT phase) or dialog primary action
+- `Esc` → clear selection, or open leave confirm, or cancel dialog
+
+Implement with `@vueuse/core` (`useMagicKeys`) or native `keydown` listener; tear down on unmount.
 
 ## URQL Usage Patterns
 
@@ -156,15 +168,18 @@ sequenceDiagram
     participant M as submitCard mutation
     participant S as Subscription
 
-    U->>UI: Click card
-    UI->>UI: optimisticSelectedId = cardId, disable hand
+    U->>UI: Click card (select)
+    U->>UI: Confirm play
+    UI->>UI: optimisticSelectedId = cardId, isSubmitting = true
     UI->>M: submitCard
     alt success
         S->>UI: myGameViewUpdated with mySubmittedCard
         UI->>UI: clear optimistic, keep locked
     else error
         M->>UI: errors
-        UI->>UI: clear optimistic, re-enable hand, toast message
+        UI->>UI: clear optimistic, re-enable hand, toast with retry
+    else timeout (10s)
+        UI->>UI: toast + retry action, re-enable hand
     end
 ```
 
@@ -187,8 +202,15 @@ Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 
 
 ### `PlayerStrip.vue`
 
-- Name, bones total, submission status dot
+- Name, bones total, connection/submission state via **card border highlight** (not a separate `N/M` counter)
+- Submitted: green left border + check icon; waiting: neutral; you-not-submitted: amber pulse; away: muted + label
 - No hand counts for opponents beyond `cardsInHand` number from public state
+
+### `SubmitCountdown.vue`
+
+- Props: `deadline: string | null` (ISO from `room.submitDeadline`)
+- Renders mm:ss; amber under 10s, red under 5s; hidden outside `SUBMIT` phase
+- Requires backend to expose `submitDeadline` on `GameRoomPublic` (see [graphql-schema.md](./graphql-schema.md))
 
 ## Tailwind Design Tokens
 
@@ -216,10 +238,25 @@ Card faces use **value-driven hue bands** (blue-violet → teal → amber → ro
 
 | State | UX |
 |---|---|
-| Session loading | Full-page minimal spinner or skeleton |
+| Session loading | `LoadingShell` skeleton (not plain text) |
+| Room/game bootstrap | `LoadingShell` — felt + hand placeholders |
 | Subscription disconnected | Banner: "Reconnecting…" + auto-retry via graphql-ws |
-| Mutation error | Inline toast with `GameError.message` |
+| Mutation slow / failed | Toast with plain message + optional **More details** (error code, timestamp) + **Retry** |
+| Submit in flight | “Submitting…” on card; confirm disabled; 10s client timeout |
 | Wrong phase action | Button disabled proactively using `phase` from view |
+
+### Toast shape (M6)
+
+```typescript
+interface ToastMessage {
+  message: string
+  variant: 'info' | 'error'
+  details?: string       // GameError.code + context for experts
+  action?: { label: string; onClick: () => void }
+}
+```
+
+Surface `GameError.code` in `details`, never in the primary `message`.
 
 ## Motion & Reduced Motion
 
@@ -231,7 +268,7 @@ All animations are short (≤ 400ms) and respect `@media (prefers-reduced-motion
 - Toasts use `role="status"` for info or `role="alert"` for errors; the reconnect banner uses `aria-live="polite"`
 - Color is never the sole signal — pair connection/submission dots with text or icons; penalties surface a number alongside the red wash
 - Card numbers must meet WCAG AA contrast against their gradient face (verify each hue band during implementation)
-- Keyboard: `Tab` cycles the hand; number keys `1`–`N` select the nth visible card; `Enter` / `Space` submits the selected card
+- Keyboard: `Tab` cycles the hand; `1`–`N` selects; `Enter` confirms; `Esc` clears selection or opens leave confirm
 - Focus rings: amber accent at 60% opacity, visible on every dark surface
 
 ## Testing (When Added)
@@ -242,6 +279,7 @@ All animations are short (≤ 400ms) and respect `@media (prefers-reduced-motion
 
 ## Cross-References
 
+- Nielsen heuristic backlog: [ux-audit.md](./ux-audit.md)
 - Screen UX, wireframes, motion catalog: [frontend-design.md](./frontend-design.md)
 - Stack choices: [frontend-stack.md](./frontend-stack.md)
 - GraphQL operations: [graphql-schema.md](./graphql-schema.md)

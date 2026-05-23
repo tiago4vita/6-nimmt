@@ -1,19 +1,24 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useLocalStorage } from '@vueuse/core'
 import { Volume2, VolumeX } from 'lucide-vue-next'
 
+import IconButton from '@/components/layout/IconButton.vue'
+
 const sfxEnabled = useLocalStorage('nimmt:sfxEnabled', false)
+
+const icon = computed(() => (sfxEnabled.value ? Volume2 : VolumeX))
+const label = computed(() =>
+  sfxEnabled.value ? 'Sound effects on' : 'Sound effects off',
+)
 </script>
 
 <template>
-  <button
-    type="button"
-    class="inline-flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm text-muted transition hover:border-accent/40 hover:text-text"
-    :aria-pressed="sfxEnabled"
+  <IconButton
+    :icon="icon"
+    :ariaLabel="label"
+    :pressed="sfxEnabled"
+    :title="label"
     @click="sfxEnabled = !sfxEnabled"
-  >
-    <Volume2 v-if="sfxEnabled" class="size-4" aria-hidden="true" />
-    <VolumeX v-else class="size-4" aria-hidden="true" />
-    SFX {{ sfxEnabled ? 'on' : 'off' }}
-  </button>
+  />
 </template>

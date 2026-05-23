@@ -138,6 +138,7 @@ async def _start_game(
                 roundNumber
                 rows { index cards { id value } }
                 submissionProgress { submitted required }
+                submitDeadline
               }
             }
           }
@@ -389,6 +390,62 @@ async def test_no_hand_leakage_in_public_room(client: httpx.AsyncClient) -> None
                 host_player_id_in_guest_view = player["id"]
         assert host_player_id_in_guest_view is not None
         assert "mySubmittedCard" not in guest_data["room"]
+
+
+async def test_submit_deadline_exposed_during_submit_phase(
+    client: httpx.AsyncClient,
+) -> None:
+    async with client:
+        host_id, host_token = await _ensure_guest(client)
+        guest_id, guest_token = await _ensure_guest(client)
+
+        host_create = await _create_room(client, host_token, host_id, name="Alice")
+        room_id = host_create["view"]["room"]["id"]
+        code = host_create["view"]["room"]["code"]
+
+        await _join_room(client, guest_token, guest_id, code, "Bob")
+
+        lobby_view = await _gql(
+            client,
+            "query($r: ID!) { myGameView(roomId: $r) { room { phase submitDeadline } } }",
+            variables={"r": room_id},
+            token=host_token,
+            guest_id=host_id,
+        )
+        assert lobby_view["data"]["myGameView"]["room"]["phase"] == "LOBBY"
+        assert lobby_view["data"]["myGameView"]["room"]["submitDeadline"] is None
+
+        start_result = await _start_game(client, host_token, host_id, room_id)
+        assert start_result["success"] is True
+        assert start_result["view"]["room"]["phase"] == "SUBMIT"
+        assert start_result["view"]["room"]["submitDeadline"] is not None
+
+        host_card = start_result["view"]["myHand"][0]["id"]
+        guest_card = (
+            await _gql(
+                client,
+                "query($r: ID!) { myGameView(roomId: $r) { myHand { id } } }",
+                variables={"r": room_id},
+                token=guest_token,
+                guest_id=guest_id,
+            )
+        )["data"]["myGameView"]["myHand"][0]["id"]
+
+        await _submit_card(client, host_token, host_id, room_id, host_card)
+        resolve_result = await _submit_card(
+            client, guest_token, guest_id, room_id, guest_card
+        )
+        next_room = resolve_result["view"]["room"]
+        if next_room["phase"] == "SUBMIT":
+            after_view = await _gql(
+                client,
+                "query($r: ID!) { myGameView(roomId: $r) { room { phase submitDeadline } } }",
+                variables={"r": room_id},
+                token=host_token,
+                guest_id=host_id,
+            )
+            after_room = after_view["data"]["myGameView"]["room"]
+            assert after_room["submitDeadline"] is not None
 
 
 async def test_update_display_name_succeeds(client: httpx.AsyncClient) -> None:

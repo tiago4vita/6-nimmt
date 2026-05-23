@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useMutation } from '@urql/vue'
 
 import AppShell from '@/components/layout/AppShell.vue'
+import LoadingShell from '@/components/layout/LoadingShell.vue'
 import RoomCodeInput from '@/components/lobby/RoomCodeInput.vue'
 import RulesDrawer from '@/components/lobby/RulesDrawer.vue'
 import { CREATE_ROOM, JOIN_ROOM } from '@/graphql/operations'
@@ -101,9 +102,11 @@ function onCodeComplete(code: string): void {
 
 <template>
   <AppShell>
-    <div v-if="sessionLoading || !isReady" class="flex min-h-[50vh] items-center justify-center">
-      <div class="text-sm text-muted">Starting guest session…</div>
-    </div>
+    <LoadingShell
+      v-if="sessionLoading || !isReady"
+      variant="home"
+      label="Starting guest session"
+    />
 
     <div v-else class="mx-auto flex max-w-md flex-col gap-6">
       <div class="text-center">
@@ -124,7 +127,7 @@ function onCodeComplete(code: string): void {
 
       <button
         type="button"
-        class="w-full rounded-md bg-accent px-4 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+        class="btn btn-primary w-full py-3"
         :disabled="!canCreate"
         @click="createRoom"
       >
@@ -141,7 +144,7 @@ function onCodeComplete(code: string): void {
 
       <button
         type="button"
-        class="w-full rounded-md border border-border px-4 py-3 text-sm font-medium text-text transition hover:border-accent/40 disabled:cursor-not-allowed disabled:opacity-50"
+        class="btn btn-secondary w-full py-3"
         :disabled="!canJoin"
         @click="joinRoom()"
       >

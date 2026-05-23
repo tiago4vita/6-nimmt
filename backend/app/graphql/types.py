@@ -54,6 +54,7 @@ class GameRoomPublic:
     rows: list[Row]
     players: list[PlayerPublic]
     submission_progress: SubmissionProgress
+    submit_deadline: datetime | None
     winner_ids: list[strawberry.ID] | None
     updated_at: datetime
 

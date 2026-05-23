@@ -11,6 +11,10 @@
 - WS disconnect → `schedule_disconnect` on subscription teardown; `reconnect` on subscribe
 - `InfrastructureError.code` → `GameErrorCode` in mutation payloads; HTTP 401 for auth failures
 
+**Pending (M6 — see [ux-audit.md](./ux-audit.md)):**
+
+- `submitDeadline` on `GameRoomPublic` — stored in Redis (`GameRoomState.submit_deadline`) but not yet exposed in Strawberry resolvers or frontend operations
+
 ## Design Principles
 
 1. **Separate public and private views** — Never expose `GameRoom` with optional hidden fields; use distinct types.
@@ -80,6 +84,7 @@ type GameRoomPublic {
   rows: [Row!]!
   players: [PlayerPublic!]!
   submissionProgress: SubmissionProgress!
+  submitDeadline: DateTime  # Non-null during SUBMIT; null otherwise. Drives SubmitCountdown.
   winnerIds: [ID!]     # Non-null when phase == FINISHED
   updatedAt: DateTime!
 }

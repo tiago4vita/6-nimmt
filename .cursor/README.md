@@ -37,6 +37,7 @@ Partial implementations and blockers: [architecture-overview.md](./architecture-
 | [frontend-stack.md](./frontend-stack.md) | Locked-in frontend tooling and rationale | Frontend setup, dependency choices |
 | [frontend-patterns.md](./frontend-patterns.md) | Vue composables, URQL usage, component contracts | Building views, components, or client logic |
 | [frontend-design.md](./frontend-design.md) | Screens, wireframes, heuristics, motion, SFX, accessibility | Designing or implementing any UI surface |
+| [ux-audit.md](./ux-audit.md) | Nielsen heuristic gap analysis and M6 UX backlog | UX improvements, polish sprint planning |
 | [game-logic.md](./game-logic.md) | Rules, phases, turn resolution, scoring | Backend game engine, validation, edge cases |
 | [graphql-schema.md](./graphql-schema.md) | Types, queries, mutations, subscriptions, visibility rules | API design, resolvers, client operations |
 | [state-management.md](./state-management.md) | Redis keys, pub/sub, reconnect, desync recovery | Live game state, WebSocket/subscription layer |

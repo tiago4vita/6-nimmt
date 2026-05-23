@@ -301,7 +301,7 @@ Portfolio demo checklist from [deployment.md](./deployment.md):
 
 ## M6 — Polish & Showcase Quality
 
-Reference: [frontend-design.md](./frontend-design.md) motion catalog and accessibility checklist.
+Reference: [frontend-design.md](./frontend-design.md), **[ux-audit.md](./ux-audit.md)** (Nielsen heuristic backlog).
 
 ### 6.1 Visual fidelity
 
@@ -311,23 +311,39 @@ Reference: [frontend-design.md](./frontend-design.md) motion catalog and accessi
 
 ### 6.2 Motion & feedback
 
-- [ ] Hover lift, submit lock fade, progress pulse, resolve stagger, row highlight
+- [ ] Hover lift, submit lock fade, player-strip submit highlight, resolve stagger, row highlight
 - [ ] `prefers-reduced-motion` fallbacks for all animations
 - [ ] Score count-up on results; winner gold border
 
-### 6.3 Accessibility
+### 6.3 UX heuristics (Sprint A — see ux-audit.md)
+
+- [x] Expose `submitDeadline` in GraphQL + `SubmitCountdown.vue`
+- [x] Select → confirm card flow; auto-submit selection on deadline
+- [x] Submit-pending indicator + mutation timeout/retry toasts
+- [x] `PlayerStrip` submission highlights; remove `SubmissionProgress` bar
+- [x] Error toasts with expandable “More details”
+
+### 6.4 UX heuristics (Sprint B)
+
+- [x] Keyboard shortcuts (`Esc`, `Enter`, `1`–`N`) via `useGameShortcuts`
+- [x] Icon-only SFX + Leave (`IconButton.vue`)
+- [x] `LoadingShell.vue` for Home / Lobby / Game boot
+- [x] Timeout auto-play feedback overlay for affected player
+- [x] Visual `RulesDrawer` with `CardTile` examples
+
+### 6.5 Accessibility
 
 - [ ] `aria-pressed` / `aria-disabled` on cards
 - [ ] Toast `role="status"` / `role="alert"`
-- [ ] Keyboard: Tab + number keys + Enter/Space submit
+- [ ] Keyboard: Tab + number keys + Enter confirm + Esc cancel/leave
 - [ ] WCAG AA contrast on card faces
 
-### 6.4 Optional SFX
+### 6.6 Optional SFX
 
 - [ ] Web Audio API triggers; `sfxEnabled` in localStorage; muted by default
 - [ ] Assets in `frontend/public/sfx/`
 
-### 6.5 Developer experience
+### 6.7 Developer experience
 
 - [ ] README quick-start verified on clean machine
 - [ ] Match row visible in Postgres after game (`psql` spot-check)
@@ -416,5 +432,6 @@ domain (M1) ✅
 | Postgres tables | [database-schema.md](./database-schema.md) |
 | Local run & demo | [deployment.md](./deployment.md) |
 | UI screens & motion | [frontend-design.md](./frontend-design.md) |
+| UX heuristic backlog | [ux-audit.md](./ux-audit.md) |
 | Vue conventions | [frontend-patterns.md](./frontend-patterns.md) |
 | Doc index | [README.md](./README.md) |

@@ -41,9 +41,11 @@ def build_public_room(room: GameRoomState) -> GameRoomPublic:
     if room.phase == DomainGamePhase.SUBMIT:
         required = len(room.players)
         submitted = sum(1 for player in room.players if player.submission is not None)
+        submit_deadline = room.submit_deadline
     else:
         required = 0
         submitted = 0
+        submit_deadline = None
 
     return GameRoomPublic(
         id=strawberry.ID(room.id),
@@ -53,6 +55,7 @@ def build_public_room(room: GameRoomState) -> GameRoomPublic:
         rows=rows,
         players=players,
         submission_progress=SubmissionProgress(submitted=submitted, required=required),
+        submit_deadline=submit_deadline,
         winner_ids=(
             [strawberry.ID(player_id) for player_id in room.winner_ids]
             if room.winner_ids is not None

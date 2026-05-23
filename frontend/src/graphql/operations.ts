@@ -26,6 +26,7 @@ export const PLAYER_PRIVATE_VIEW_FIELDS = `
       code
       phase
       roundNumber
+      submitDeadline
       winnerIds
       updatedAt
       rows {

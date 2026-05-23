@@ -3,9 +3,10 @@ import { ref, watch, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 
 import AppShell from '@/components/layout/AppShell.vue'
-import ReconnectBanner from '@/components/feedback/ReconnectBanner.vue'
+import ConnectionStatusBanner from '@/components/feedback/ConnectionStatusBanner.vue'
+import LoadingShell from '@/components/layout/LoadingShell.vue'
 import GameBoard from '@/components/game/GameBoard.vue'
-import PhaseIndicator from '@/components/game/PhaseIndicator.vue'
+import GameHudBar from '@/components/game/GameHudBar.vue'
 import PlayerStrip from '@/components/game/PlayerStrip.vue'
 import ResultsOverlay from '@/components/game/ResultsOverlay.vue'
 import { isFinishedPhase, isPlayPhase } from '@/graphql/types'
@@ -45,15 +46,18 @@ watch(
 
 <template>
   <AppShell>
-    <ReconnectBanner :visible="isReconnecting && !isLoading" />
+    <ConnectionStatusBanner :is-reconnecting="isReconnecting && !isLoading" />
 
-    <div v-if="isLoading" class="flex min-h-[40vh] items-center justify-center text-sm text-muted">
-      Loading results…
-    </div>
+    <LoadingShell v-if="isLoading" variant="game" label="Loading results" />
 
     <div v-else-if="room" class="space-y-4 opacity-70">
-      <PhaseIndicator :phase="phase" :round-number="room.roundNumber" />
-      <PlayerStrip :players="players" :my-player-id="myPlayerId" />
+      <GameHudBar
+        :phase="phase"
+        :round-number="room.roundNumber"
+        :room-code="room.code"
+        :submit-deadline="null"
+      />
+      <PlayerStrip :players="players" :my-player-id="myPlayerId" :phase="phase" />
       <GameBoard :rows="rows" />
     </div>
 

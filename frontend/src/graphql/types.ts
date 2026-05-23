@@ -46,6 +46,7 @@ export interface GameRoomPublic {
   rows: Row[]
   players: PlayerPublic[]
   submissionProgress: SubmissionProgress
+  submitDeadline: string | null
   winnerIds: string[] | null
   updatedAt: string
 }
