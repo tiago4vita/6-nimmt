@@ -54,7 +54,7 @@ erDiagram
         uuid match_id FK
         uuid guest_id FK
         string display_name
-        int penalty_total
+        int bones_total
         int placement
     }
 ```
@@ -103,7 +103,7 @@ Written once when game finishes.
 {
   "winnerIds": ["player-uuid-1"],
   "players": [
-    { "playerId": "...", "displayName": "Guest-A1", "penaltyTotal": 12, "placement": 1 }
+    { "playerId": "...", "displayName": "Guest-A1", "bonesTotal": 12, "placement": 1 }
   ]
 }
 ```
@@ -118,7 +118,7 @@ Normalized scores for querying leaderboards later.
 | `match_id` | UUID FK | |
 | `guest_id` | UUID FK NULL | Nullable if guest purged |
 | `display_name` | VARCHAR(32) | Denormalized for history |
-| `penalty_total` | INT | |
+| `bones_total` | INT | |
 | `placement` | INT | 1 = best |
 
 ## SQLModel Reference (Sketch)

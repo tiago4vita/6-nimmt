@@ -71,19 +71,19 @@ Pure Python module — **no I/O, no FastAPI imports**. Reference: [game-logic.md
 
 ### 1.1 Card & deck primitives
 
-- [ ] `backend/app/domain/cards.py` — `Card`, `Deck`, `bull_heads(value) -> int`
-- [ ] Unit tests: bull heads for all rule branches (55, ×11, ×10, ×5, default)
+- [ ] `backend/app/domain/cards.py` — `Card`, `Deck`, `bones(value) -> int`
+- [ ] Unit tests: bones for all rule branches (55, ×11, ×10, ×5, default)
 
 ### 1.2 Rows & placement helpers
 
-- [ ] `backend/app/domain/rows.py` — `Row`, `find_best_row`, `pick_least_penalty_row` (Rule C v1 auto-pick)
+- [ ] `backend/app/domain/rows.py` — `Row`, `find_best_row`, `pick_least_bones_row` (Rule C v1 auto-pick)
 - [ ] Unit tests: normal placement (Rule A), full row collection (Rule B), too-low auto-pick (Rule C + tie-break)
 
 ### 1.3 Game state & phases
 
 - [ ] `backend/app/domain/game.py` — `GamePhase` enum, `GameState`, deal logic (player count → cards/rounds table)
 - [ ] Seed four rows with one card each at game start
-- [ ] `backend/app/domain/scoring.py` — penalty totals, winner resolution (ties = shared victory)
+- [ ] `backend/app/domain/scoring.py` — bones totals, winner resolution (ties = shared victory)
 
 ### 1.4 Turn resolution
 
@@ -234,7 +234,7 @@ Reference: [frontend-patterns.md](./frontend-patterns.md), [frontend-design.md](
 
 - [ ] `GameView` — subscribe to `myGameViewUpdated`
 - [ ] `PhaseIndicator`, `SubmissionProgress`, `PlayerStrip`
-- [ ] `GameBoard` + `GameRow` + `CardTile` (hue bands + bull-head indicators)
+- [ ] `GameBoard` + `GameRow` + `CardTile` (hue bands + bone indicators)
 - [ ] `CardHand` — single-click submit, optimistic lock
 - [ ] `GamePhaseOverlay` for DEAL / RESOLVE / SCORE
 - [ ] `ResolveFeed` — stagger `lastResolvedPlays`
@@ -267,7 +267,7 @@ Reference: [frontend-design.md](./frontend-design.md) motion catalog and accessi
 ### 6.1 Visual fidelity
 
 - [ ] Dark theme tokens applied consistently (not placeholder neutral-50 home page)
-- [ ] Card gradients per value band; bull-head dot/ring indicators
+- [ ] Card gradients per value band; bone dot/ring indicators
 - [ ] Felt surface behind board; amber accent on CTAs
 
 ### 6.2 Motion & feedback

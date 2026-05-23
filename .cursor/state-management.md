@@ -51,7 +51,7 @@ interface GameRoomState {
     id: string;
     guestId: string;
     displayName: string;
-    penaltyTotal: number;
+    bonesTotal: number;
     hand: Array<{ id: string; value: number }>;  // SECRET per player
     isConnected: boolean;
     submission: { cardId: string } | null;       // SECRET until resolve

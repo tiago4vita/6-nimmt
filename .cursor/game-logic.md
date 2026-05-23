@@ -2,14 +2,14 @@
 
 ## Game Summary
 
-**6 nimmt!** (*Take 6*) is a trick-avoidance card game. Players simultaneously play numbered cards onto four ascending rows. Playing the sixth card in a row (or being forced to take a row) collects bull-head penalty points. **Lowest total penalty wins.**
+**6 nimmt!** (*Take 6*) is a trick-avoidance card game. Players simultaneously play numbered cards onto four ascending rows. Playing the sixth card in a row (or being forced to take a row) collects **bones** (penalty points). **Lowest total bones wins.**
 
 ## Card Deck
 
 - **104 cards**, numbered **1–104**
-- Each card has a **bull head count** (penalty value):
+- Each card has a **bone count** (penalty value):
 
-| Condition | Bull heads |
+| Condition | Bones |
 |---|---|
 | Card 55 | 7 |
 | Multiples of 11 (except 55) | 5 |
@@ -20,7 +20,7 @@
 Implement as a pure function:
 
 ```python
-def bull_heads(value: int) -> int: ...
+def bones(value: int) -> int: ...
 ```
 
 ## Player Count & Deal
@@ -55,19 +55,19 @@ Place the card on the row whose **last card** is the **greatest value still less
 
 ### Rule B — Row full (6th card)
 
-If the chosen row already has **5 cards**, the player **takes** those 5 cards (adds bull heads to their score pile), and the played card **becomes the sole card** in that row.
+If the chosen row already has **5 cards**, the player **takes** those 5 cards (adds bones to their score pile), and the played card **becomes the sole card** in that row.
 
 ### Rule C — Card too low
 
-If the played card is **lower than all four row tail cards**, the player **chooses which row to take** (all cards in that row go to their penalty pile), and their played card **starts that row**.
+If the played card is **lower than all four row tail cards**, the player **chooses which row to take** (all cards in that row go to their bone pile), and their played card **starts that row**.
 
-> **v1 simplification:** For automated online play, if Rule C applies, **auto-select the row with the fewest bull heads** (tie-break: lowest tail value). Document this in UI copy. Future: optional timed UI for row choice.
+> **v1 simplification:** For automated online play, if Rule C applies, **auto-select the row with the fewest bones** (tie-break: lowest tail value). Document this in UI copy. Future: optional timed UI for row choice.
 
 ## Scoring
 
-- Collected cards accumulate **penalty points** (sum of bull heads)
-- During the game, expose each player's **running penalty total**
-- After the final round, **lowest penalty wins** (ties: shared victory)
+- Collected cards accumulate **bones** (sum of each card's bone count)
+- During the game, expose each player's **running bones total**
+- After the final round, **lowest bones total wins** (ties: shared victory)
 
 ## Game Phases (FSM)
 
@@ -108,11 +108,11 @@ When |submissions| == |active_players|:
 
 ```
 backend/app/domain/
-  cards.py        # bull_heads, Card, Deck
+  cards.py        # bones, Card, Deck
   rows.py         # Row, placement helpers
   game.py         # GameState, phase transitions
   resolve.py      # resolve_turn — core algorithm
-  scoring.py      # penalty totals, winner
+  scoring.py      # bones totals, winner
 ```
 
 All functions accept and return **immutable or copy-on-write** dataclasses / Pydantic models — no side effects.
@@ -130,7 +130,7 @@ def resolve_turn(state: GameState, submissions: dict[PlayerId, CardId]) -> GameS
 
         if row_idx is None:
             # Rule C — auto pick row (v1)
-            row_idx = pick_least_penalty_row(new_state.rows)
+            row_idx = pick_least_bones_row(new_state.rows)
             new_state.collect_row(player_id, row_idx)
             new_state.rows[row_idx] = Row(cards=[card])
         elif len(new_state.rows[row_idx].cards) == 5:
@@ -170,13 +170,13 @@ Complexity per round: **O(p log p + p)** where p = player count (≤ 10) — neg
 | Others' chosen card (pre-resolve) | ❌ | ❌ | ❌ |
 | All played cards (post-resolve) | ✅ | ✅ | ✅ |
 | Row state | ✅ | ✅ | ✅ |
-| Penalty totals | ✅ | ✅ | ✅ |
+| Bones totals | ✅ | ✅ | ✅ |
 
 ## Testing Requirements
 
 Unit tests (no I/O) must cover:
 
-- `bull_heads` for all rule branches
+- `bones` for all rule branches
 - Normal placement across four rows
 - Rule B (sixth card triggers collection)
 - Rule C (auto row pick — verify tie-break)

@@ -38,7 +38,7 @@ In-game HUD uses at most **two font sizes** to preserve a calm reading hierarchy
 
 ### Card Chroma (Vibrant, Value-Driven)
 
-Card faces stay readable on dark felt via **hue bands** (predictable by value) and **bull-head intensity** (severity cue):
+Card faces stay readable on dark felt via **hue bands** (predictable by value) and **bone intensity** (severity cue):
 
 | Card range | Face hue | Tailwind sketch |
 |---|---|---|
@@ -47,7 +47,7 @@ Card faces stay readable on dark felt via **hue bands** (predictable by value) a
 | 53–78 | Amber-orange | `from-amber-500 to-orange-600` |
 | 79–104 | Rose-red | `from-rose-500 to-red-600` |
 
-| Bull heads | Indicator |
+| Bones | Indicator |
 |---|---|
 | 1 | Single dot, low opacity |
 | 2 | Double dot |
@@ -55,14 +55,14 @@ Card faces stay readable on dark felt via **hue bands** (predictable by value) a
 | 5 (multiples of 11) | Solid ring outline |
 | 7 (card 55) | Solid ring + soft pulse on hover |
 
-`CardTile.vue` derives both via computed properties from `value` and `bullHeads`. Numbers render white with a subtle inner shadow for a "physical tile" depth — never decorative cow imagery.
+`CardTile.vue` derives both via computed properties from `value` and `bones`. Numbers render white with a subtle inner shadow for a "physical tile" depth — bone severity shown as minimal dot/ring markers only.
 
 ## Nielsen Heuristics Coverage
 
 | # | Heuristic | Where it shows up |
 |---|---|---|
 | 1 | Visibility of system status | `PhaseIndicator`, `SubmissionProgress`, connection dots, round counter, optional submit countdown |
-| 2 | Match real world | Vertical rows mirror a tabletop; large numbers; bull heads as dot/ring severity |
+| 2 | Match real world | Vertical rows mirror a tabletop; large numbers; bones as dot/ring severity |
 | 3 | User control & freedom | Leave room with confirm; edit display name in lobby; copy code/link; SFX toggle |
 | 4 | Consistency & standards | Shared `AppShell`, one button variant set, `CardTile` reused in hand + board + resolve feed |
 | 5 | Error prevention | `Start game` disabled below 2 players; hand locks after submit; host-only actions |
@@ -162,7 +162,7 @@ The core experience. Desktop-first vertical board.
 ┌────────────────────────────────────────────────────────────┐
 │ Round 3/8   SUBMIT   3/4 submitted   [SFX]   [Leave]       │
 ├────────────────────────────────────────────────────────────┤
-│  PlayerStrip: names · penalty totals · submit dots         │
+│  PlayerStrip: names · bones totals · submit dots         │
 ├────────────────────────────────────────────────────────────┤
 │        ┌─ felt surface ──────────────────────────┐         │
 │  Row 1 │ [12][19][24][31][38]                    │         │
@@ -177,7 +177,7 @@ The core experience. Desktop-first vertical board.
 ```
 
 - **Interaction model:** Single-click submit. Selected card lifts and gains an amber ring; the rest of the hand dims and locks while the mutation resolves (optimistic — see [frontend-patterns.md](./frontend-patterns.md#optimistic-submit-flow)).
-- **Rule C copy:** When the played card is lower than all row tails, surface a toast in the resolve feed: *"Card too low — auto-collected row with fewest bull heads."*
+- **Rule C copy:** When the played card is lower than all row tails, surface a toast in the resolve feed: *"Card too low — auto-collected row with fewest bones."*
 - **Transient phases (`DEAL`, `RESOLVE`, `SCORE`):** `GamePhaseOverlay` shows a shimmer + phase label to prevent interaction flash.
 
 Reactive elements driven by the subscription payload:
@@ -187,7 +187,7 @@ Reactive elements driven by the subscription payload:
 | `phase === SUBMIT` | Enable hand; show countdown if backend exposes a deadline (else client estimate from `updatedAt`) |
 | `mySubmittedCard` set | Lock hand; show face-up mini tile near player strip |
 | `submissionProgress` | Bar + numeric; pulse on increment |
-| `lastResolvedPlays` | `ResolveFeed` staggers card → row arrow → penalty badge (120ms/card) |
+| `lastResolvedPlays` | `ResolveFeed` staggers card → row arrow → bones badge (120ms/card) |
 | Row affected | `GameRow` highlight: amber wash fade (200ms) |
 | Opponent `hasSubmitted` | Dot turns green; no card value leaked |
 
@@ -221,7 +221,7 @@ Primary end-game UX is an overlay on `GameView` (backdrop-blur, dimmed board). `
 | Resolve reveal | Stagger fade + slide per `ResolvedPlay` | 120ms × n | All at once |
 | Row highlight | Background amber wash 10% → 0% | 200ms | 2px border flash |
 | Copy code | Icon swap to `Check` | 200ms | Toast only |
-| Penalty increment | Tabular tick / flip on score number | 400ms | Instant replace |
+| Bones increment | Tabular tick / flip on score number | 400ms | Instant replace |
 | Player joins lobby | List item slide-in | 150ms | Static insert |
 
 All transitions honor `@media (prefers-reduced-motion: reduce)` by swapping the column above. Color and state changes still happen so feedback is preserved.
@@ -234,7 +234,7 @@ Muted by default. Preference persists in `localStorage` (`sfxEnabled`) via `@vue
 |---|---|---|
 | Card select | Soft tap | Low |
 | Submit confirm | Short chime | Low |
-| Penalty taken | Muted thud | Medium |
+| Bones taken | Muted thud | Medium |
 | Round resolve complete | Soft sweep | Low |
 | Game won | Single warm note | Medium |
 

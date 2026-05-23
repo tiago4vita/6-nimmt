@@ -43,7 +43,7 @@ enum GameErrorCode {
 type Card {
   id: ID!
   value: Int!
-  bullHeads: Int!
+  bones: Int!
 }
 
 type Row {
@@ -54,7 +54,7 @@ type Row {
 type PlayerPublic {
   id: ID!
   displayName: String!
-  penaltyTotal: Int!
+  bonesTotal: Int!
   cardsInHand: Int!    # Count only — not values
   hasSubmitted: Boolean!
   isConnected: Boolean!
@@ -94,7 +94,7 @@ type ResolvedPlay {
   playerId: ID!
   card: Card!
   rowIndex: Int
-  penaltyTaken: Int!       # Bull heads collected this play, 0 if none
+  bonesTaken: Int!       # Bones collected this play, 0 if none
 }
 ```
 
@@ -208,13 +208,13 @@ Avoid loaders for live Redis room state — single `HGETALL` or JSON blob per ro
 subscription MyGameView($roomId: ID!) {
   myGameViewUpdated(roomId: $roomId) {
     myPlayerId
-    myHand { id value bullHeads }
+    myHand { id value bones }
     mySubmittedCard { id value }
     room {
       phase
       roundNumber
-      rows { index cards { id value bullHeads } }
-      players { id displayName penaltyTotal hasSubmitted isConnected }
+      rows { index cards { id value bones } }
+      players { id displayName bonesTotal hasSubmitted isConnected }
       submissionProgress { submitted required }
     }
   }

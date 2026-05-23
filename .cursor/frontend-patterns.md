@@ -172,7 +172,7 @@ Never optimistically remove the card from `myHand` — wait for server view to a
 
 Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 'md'`
 
-- Display: large number, small bull-head indicator (minimal icon or dots — not cartoon cows)
+- Display: large number, small bone indicator (minimal icon or dots)
 - Tailwind: border, subtle shadow, `transition-opacity` on disabled
 
 ### `GameBoard.vue`
@@ -183,7 +183,7 @@ Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 
 
 ### `PlayerStrip.vue`
 
-- Name, penalty total, submission status dot
+- Name, bones total, submission status dot
 - No hand counts for opponents beyond `cardsInHand` number from public state
 
 ## Tailwind Design Tokens
@@ -206,7 +206,7 @@ Dark-first table-top palette. Define in `src/style.css` (alongside `@import "tai
 
 Typography: **Inter** via `@fontsource/inter`. Use `font-variant-numeric: tabular-nums` for card values and scores so digits don't jitter during count-up animations. No more than two font sizes in the in-game HUD.
 
-Card faces use **value-driven hue bands** (blue-violet → teal → amber → rose, ascending) with bull-head intensity as a severity cue. Full chroma rules and indicator styles live in [frontend-design.md](./frontend-design.md#card-chroma-vibrant-value-driven).
+Card faces use **value-driven hue bands** (blue-violet → teal → amber → rose, ascending) with bone intensity as a severity cue. Full chroma rules and indicator styles live in [frontend-design.md](./frontend-design.md#card-chroma-vibrant-value-driven).
 
 ## Error & Loading UX
 

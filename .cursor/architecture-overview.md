@@ -59,7 +59,7 @@ Game logic, auth, Redis state, subscriptions, and PostgreSQL models are **not im
 
 ### Information visibility
 
-- **Public:** rows, player names, penalty totals, hand counts, submission flags.
+- **Public:** rows, player names, bones totals, hand counts, submission flags.
 - **Private (per player):** `myHand`, own submitted card during `SUBMIT`.
 - **Never exposed pre-resolve:** other players' chosen cards.
 
