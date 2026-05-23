@@ -21,10 +21,10 @@ This directory is the **single source of truth** for architecture, game rules, a
 |---|---|
 | M0 Scaffold | ✅ Done |
 | M1 Domain engine | ✅ Done |
-| M2 Infrastructure (Redis) | ✅ Done — not yet exposed via GraphQL |
-| M3 GraphQL API | ⬜ **Current focus** |
-| M4 Frontend core | ⬜ Not started |
-| M5 Playable MVP | ⬜ Blocked on M3 + M4 |
+| M2 Infrastructure (Redis) | ✅ Done |
+| M3 GraphQL API | ✅ Done |
+| M4 Frontend core | ⬜ **Current focus** |
+| M5 Playable MVP | ⬜ Blocked on M4 |
 
 Partial implementations and blockers: [architecture-overview.md](./architecture-overview.md#known-gaps--mvp-blockers).
 
@@ -62,12 +62,12 @@ Partial implementations and blockers: [architecture-overview.md](./architecture-
 ├── backend/
 │   ├── app/
 │   │   ├── config.py        # pydantic-settings (implemented)
-│   │   ├── main.py          # FastAPI + Redis lifespan + health GraphQL (implemented)
+│   │   ├── main.py          # FastAPI + Redis lifespan + GraphQL router (implemented)
 │   │   ├── domain/          # Pure game logic — cards, rows, game, resolve, scoring (implemented)
 │   │   ├── infrastructure/  # Redis client, sessions, rooms, game orchestration, pub/sub, timers (implemented)
-│   │   └── graphql/         # Strawberry schema, resolvers, dataloaders (planned — M3)
-│   ├── tests/               # 67 pytest (domain + infrastructure + openapi)
-│   ├── openapi.yaml         # Contract reference (most ops: planned)
+│   │   └── graphql/         # Strawberry schema, resolvers, subscriptions, view builders (implemented)
+│   ├── tests/               # 78 pytest (domain + infrastructure + graphql + openapi)
+│   ├── openapi.yaml         # Contract reference (implemented ops documented)
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── pyproject.toml
@@ -114,8 +114,8 @@ See **[roadmap.md](./roadmap.md)** for the full checklist, milestones (M0–M7),
 
 1. ~~`backend/app/domain/` — Pure game engine + unit tests~~ ✅
 2. ~~Redis live-state layer + guest auth~~ ✅
-3. **GraphQL queries, mutations, subscriptions** ← current
-4. Vue frontend: home → lobby → play
+3. ~~GraphQL queries, mutations, subscriptions~~ ✅
+4. **Vue frontend: home → lobby → play** ← current
 5. PostgreSQL persistence for completed matches (non-blocking for MVP; deps declared but unused)
 
 **Testing:** Backend tests require Redis (`redis://localhost:6379/15` by default). Run `pytest` from `backend/` after `docker compose up redis` or full stack.

@@ -30,10 +30,10 @@ flowchart TB
 | Layer | Location | Responsibility |
 |---|---|---|
 | Frontend | `frontend/src/` | Lobby, game UI, guest session persistence, GraphQL client |
-| GraphQL API | `backend/app/graphql/` *(M3 — not started)* | Schema, resolvers, subscriptions, DataLoaders |
+| GraphQL API | `backend/app/graphql/` *(M3 — complete)* | Schema, resolvers, subscriptions, public/private view builders |
 | Domain | `backend/app/domain/` *(M1 — complete)* | Pure 6 Nimmt rules — no I/O |
 | Infrastructure | `backend/app/infrastructure/` *(M2 — complete)* | Redis sessions/rooms/game loop, pub/sub, timers, guest auth |
-| Config / entry | `backend/app/config.py`, `main.py` | Settings, CORS, FastAPI lifespan, health GraphQL only |
+| Config / entry | `backend/app/config.py`, `main.py` | Settings, CORS, FastAPI lifespan, GraphQL router + WS context |
 
 ## Current Implementation Status
 
@@ -42,57 +42,56 @@ flowchart TB
 | Layer | Status | Notes |
 |---|---|---|
 | Domain (M1) | ✅ Complete | Pure rules + unit tests in `backend/app/domain/` |
-| Infrastructure (M2) | ✅ Complete | Redis orchestration + 67 integration tests; not yet exposed via API |
-| GraphQL API (M3) | ⬜ Stub | Only `health` query in `main.py`; no `backend/app/graphql/` |
+| Infrastructure (M2) | ✅ Complete | Redis orchestration; exposed via GraphQL resolvers |
+| GraphQL API (M3) | ✅ Complete | Queries, mutations, subscriptions in `backend/app/graphql/`; 11 GraphQL tests |
 | Frontend (M4) | 🟡 Scaffold | URQL client + read-only `guest-session.ts`; placeholder `App.vue` |
 | PostgreSQL | ⬜ Declared only | `DATABASE_URL` in config; no models, migrations, or runtime usage |
-| Playable MVP (M5) | ⬜ Blocked | Requires M3 + M4 |
+| Playable MVP (M5) | ⬜ Blocked | Requires M4 frontend UI |
 
 **Runnable today:**
 
-- **Backend:** FastAPI + Strawberry at `/graphql` with `health` only; Redis lifespan + pub/sub listener wired in `main.py`.
+- **Backend:** FastAPI + Strawberry at `/graphql` — guest sessions, room lifecycle, game mutations, and WS subscriptions; Redis lifespan + pub/sub listener in `main.py`.
 - **Frontend:** Vue 3 + Vite + Tailwind v4 + URQL client at `src/graphql/client.ts` (no operations called yet).
 - **Infrastructure:** `docker-compose.yml` with Postgres 16, Redis 7, backend, frontend.
-- **Tests:** `pytest` — 67 pass against real Redis (DB 15 in tests); no CI pipeline yet.
+- **Tests:** `pytest` — 78 pass against real Redis (DB 15 in tests); no CI pipeline yet.
 
-**Rough completeness toward a playable two-browser demo:** ~25–30%. Backend engine is strong; the wire protocol (GraphQL) and UI are the bottleneck — not the domain rules.
+**Rough completeness toward a playable two-browser demo:** ~45–50%. Backend API is complete; frontend UI is the bottleneck.
 
 See [roadmap.md](./roadmap.md) for milestone checklist and [Known Gaps](#known-gaps--mvp-blockers) below.
 
 ## Known Gaps & MVP Blockers
 
-These are intentional deferrals or partial implementations discovered during M2 review. Track fixes in [roadmap.md](./roadmap.md) M3/M4 unless noted as M7 backlog.
+Remaining deferrals after M3. Track fixes in [roadmap.md](./roadmap.md) unless noted as M7 backlog.
 
 | Gap | Impact | Target fix |
 |---|---|---|
-| **No GraphQL resolvers** | Clients cannot create/join/play | M3 — `backend/app/graphql/` |
-| **`last_resolution` never populated** | Resolve feed / animation has no data | M3 view builders during `_resolve_round` |
-| **Disconnect grace not wired** | `schedule_disconnect()` exists but nothing calls it from WS transport | M3 subscriptions + WS lifecycle |
-| **`is_connected` vs domain `is_active`** | Adapter always sets `is_active=True`; disconnect only flips `is_connected`; all seated players block submit barrier until timeout | Reconcile in M3 or document as v1 behavior |
+| **No frontend UI** | Users cannot play in a browser | M4 — router, composables, views |
+| **`is_connected` vs domain `is_active`** | Adapter always sets `is_active=True`; disconnect only flips `is_connected`; all seated players block submit barrier until timeout | Document v1 behavior in M4 or reconcile later |
 | **`version` bumped, never checked** | No optimistic concurrency on read-modify-write | Acceptable for single worker; Redis WATCH or version check in M7 |
 | **In-process locks & timers** | `asyncio.Lock`, timer tasks, `SubscriberRegistry` are process-local | Single uvicorn worker for MVP; M7 multi-worker hardening |
 | **`SESSION_SECRET` unused** | Tokens are UUID + opaque bearer + SHA-256 hash (Option A), not JWT | Keep for optional JWT (Option B) or remove when cleaning config |
 | **Frontend session read-only** | `guest-session.ts` reads localStorage; nothing calls `ensureGuestSession` | M4 `useGuestSession` composable |
-| **Stale doc drift** | Some docs still described M1/M2 as "planned" | Keep `.cursor/` aligned when architecture changes |
+| **PostgreSQL unused** | No match history persistence | M2.7 / S8 — non-blocking for MVP demo |
+| **CI pipeline** | No automated test runs on push | M7 backlog |
 
-**Do not treat "67 tests green" as "almost playable."** M3 is a full milestone (view builders, card-leak audit, subscriptions), not a thin wrapper over infrastructure.
+**Backend is API-complete for MVP.** A playable demo requires M4 (frontend wired to GraphQL).
 
-## Data Flow (Target)
-
-### Live play
+## Data Flow (Live Play)
 
 1. Client calls `ensureGuestSession` → server stores session hash in Redis.
 2. Host `createRoom` / guest `joinRoom` → Redis `GameRoomState` created/updated.
 3. Client subscribes to `myGameViewUpdated(roomId)` → receives **player-specific** view (hand visible, others hidden).
 4. All players `submitCard` during `SUBMIT` → server records submissions atomically in Redis.
 5. When all submissions received → domain engine resolves placement → Redis state updated → pub/sub pushes new views.
-6. On `FINISHED` → optional snapshot persisted to PostgreSQL.
+6. On `FINISHED` → optional snapshot persisted to PostgreSQL (not implemented yet).
 
 ### Information visibility
 
 - **Public:** rows, player names, bones totals, hand counts, submission flags.
 - **Private (per player):** `myHand`, own submitted card during `SUBMIT`.
 - **Never exposed pre-resolve:** other players' chosen cards.
+
+Enforced in `backend/app/graphql/views.py` and covered by `test_no_hand_leakage_in_public_room`.
 
 See [graphql-schema.md](./graphql-schema.md) and [auth.md](./auth.md).
 
@@ -120,7 +119,7 @@ Details: [state-management.md](./state-management.md).
 
 ## Cross-References
 
-- Milestones & known gaps: [roadmap.md](./roadmap.md)
+- Milestones & task checklist: [roadmap.md](./roadmap.md)
 - Deployment & local dev: [deployment.md](./deployment.md)
 - Game rules: [game-logic.md](./game-logic.md)
 - GraphQL types: [graphql-schema.md](./graphql-schema.md)
