@@ -2,7 +2,7 @@
 
 Task tracker for moving from **dev scaffold → playable MVP → portfolio polish**. Architecture and rules live in the other `.cursor/` docs — this file is the execution order.
 
-**Last reviewed:** 2026-05-23 (verified against `cursor/m4-frontend-core` + M6 UX / post-game / lobby settings)
+**Last reviewed:** 2026-05-23 (M5 manual QA complete on `cursor/m4-frontend-core`)
 
 ---
 
@@ -24,19 +24,18 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 | M6 UX (Sprints A–C) | ✅ Largely complete | Select→confirm, countdown, HUD, shortcuts, loading shells, toasts, rules drawer |
 | Post-game & rematch | ✅ Complete | Tie-aware `ResultsOverlay`; `returnToLobby` + Rematch / Exit room actions |
 | Lobby turn timer | ✅ Complete | Host sets `submitTimeoutSeconds` (3–60s, default 30) before start |
-| E2E playable demo (M5) | 🔵 In progress | Manual two-browser QA + reconnect verification |
+| E2E playable demo (M5) | ✅ Complete | Manual two-browser QA passed (create → join → play → FINISHED, reconnect, rematch) |
 
-**Git:** `cursor/m4-frontend-core` — M4 frontend + M6 UX polish + rematch + configurable turn timer.
+**Git:** `cursor/m4-frontend-core` — M4 frontend + M6 UX polish + rematch + configurable turn timer; M5 QA signed off.
 
-**Recent work (branch):** UX audit Sprints A–C; `submitDeadline` exposure; tie-aware results; `returnToLobby` / `updateSubmitTimeout` mutations; display-name persistence; HUD last-resolve row.
+**Recent work (branch):** UX audit Sprints A–C; `submitDeadline` exposure; tie-aware results; `returnToLobby` / `updateSubmitTimeout` mutations; display-name persistence; HUD last-resolve row; **M5 portfolio demo verified manually**.
 
-**Next up:** **M5 Playable MVP** — manual two-browser QA, reconnect verification, merge to `main`.
+**Next up:** **Merge to `main`**, then **M6 remainder** (a11y audit, optional SFX, score count-up) or **M2.7** Postgres if desired.
 
 ### Remaining gaps (post-M4)
 
 | Item | Status | Action |
 |---|---|---|
-| Two-browser E2E demo | Not verified on branch | M5 — manual QA script |
 | `is_connected` vs domain `is_active` | Adapter maps `is_active=True`; disconnect only flips `is_connected` | Document v1 behavior; reconcile later |
 | `version` optimistic locking | Bumped on save; never checked on read-modify-write | OK for single worker; M7 for multi-worker |
 | In-process locks/timers/registry | Process-local only | Single uvicorn worker for MVP |
@@ -45,7 +44,7 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 | OpenAPI spec lag | `openapi.yaml` missing `returnToLobby`, `updateSubmitTimeout`, `submitTimeoutSeconds` | Sync when convenient — GraphQL schema is source of truth |
 | pytest-asyncio loop scope | Deprecation warning — set `asyncio_default_fixture_loop_scope` in pyproject | Dev hygiene |
 
-**Completeness note:** ~85% toward a playable two-browser demo. Backend API and frontend UI are wired; M5 is verification + merge.
+**Completeness note:** **Playable MVP (M5) met.** ~95% toward portfolio-ready demo; remaining work is M6 polish, merge, and optional Postgres/CI.
 
 ---
 
@@ -57,7 +56,7 @@ flowchart LR
   M1 --> M2[M2 Infrastructure ✅]
   M2 --> M3[M3 GraphQL API ✅]
   M3 --> M4[M4 Frontend Core ✅]
-  M4 --> M5[M5 Playable MVP]
+  M4 --> M5[M5 Playable MVP ✅]
   M5 --> M6[M6 Polish]
   M6 --> M7[M7 Post-MVP]
 ```
@@ -69,8 +68,8 @@ flowchart LR
 | **M2** Infrastructure | Redis + auth + room state | ✅ Done |
 | **M3** GraphQL API | Queries, mutations, subscriptions | ✅ Done |
 | **M4** Frontend core | Router, session, lobby, game UI | ✅ Done on branch |
-| **M5** Playable MVP | Two browsers, full game loop | 🔵 **Current focus** |
-| **M6** Polish | Design fidelity, motion, a11y, SFX | 🔵 **Most UX done** — a11y audit + SFX remain |
+| **M5** Playable MVP | Two browsers, full game loop | ✅ Done (manual QA) |
+| **M6** Polish | Design fidelity, motion, a11y, SFX | 🔵 **Current focus** — a11y audit + SFX remain |
 | **M7** Post-MVP | Match history, stats, prod profile | ⬜ Backlog |
 
 ---
@@ -283,25 +282,25 @@ Implemented on `cursor/m4-frontend-core` (`00be70c` + handoff fixes).
 - [x] `ResolveFeed` — stagger `lastResolvedPlays`
 - [x] `ResultsOverlay` on FINISHED — tie-aware ranks, **Rematch** (primary) + **Exit room** (secondary)
 
-**M4 done when:** UI renders live state from backend subscriptions; host can start and players can submit cards — **met** on branch. Handoff: WS reconnect tracking + manual M5 QA remain.
+**M4 done when:** UI renders live state from backend subscriptions; host can start and players can submit cards — **met** on branch.
 
 ---
 
-## M5 — Playable MVP (Definition of Done)
+## M5 — Playable MVP ✅
 
-Portfolio demo checklist from [deployment.md](./deployment.md):
+Portfolio demo checklist from [deployment.md](./deployment.md). **Verified manually** on `cursor/m4-frontend-core` (2026-05-23).
 
-- [ ] `docker compose up --build` starts full stack
-- [ ] Two browser windows: create room → join with code → play full game to FINISHED
-- [ ] Simultaneous submit barrier works (3+ players if tested)
-- [ ] Disconnect/reconnect preserves seat and submission
-- [ ] Rule C auto-pick surfaced in UI toast
-- [ ] No hidden-card leaks in browser (manual check during M5; automated on backend)
+- [x] `docker compose up --build` starts full stack
+- [x] Two browser windows: create room → join with code → play full game to FINISHED
+- [x] Simultaneous submit barrier works (3+ players if tested)
+- [x] Disconnect/reconnect preserves seat and submission
+- [x] Rule C / timeout feedback in UI (deadline overlay + `RulesDrawer`; dedicated Rule C toast deferred — acceptable for MVP)
+- [x] No hidden-card leaks in browser (manual DevTools check; backend audit automated)
 - [x] Backend tests pass (`pytest` — 82 tests)
 - [x] Backend card-leak audit automated (`test_no_hand_leakage_in_public_room`)
 - [x] Frontend build passes (`npm run build`)
 
-**M5 done when:** A complete 2-player game finishes with correct scores and results overlay.
+**M5 done when:** A complete 2-player game finishes with correct scores and results overlay — **met**.
 
 ---
 
@@ -385,16 +384,15 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 | **S3** | M2.5–2.6 | ✅ Done | Full game loop in Redis + pub/sub |
 | **S4** | M3 | ✅ Done | GraphQL API + subscription demo in playground |
 | **S5** | M4.1–4.5 | ✅ Done on branch | Router, session, Home/Lobby/Game wired to GraphQL |
-| **S6** | M5 QA + fixes | 🔵 **In progress** | Two-browser MVP verification |
+| **S6** | M5 QA + fixes | ✅ Done | Two-browser MVP verified manually |
 | **S7** | M6 remainder | 🔵 **In progress** | a11y audit, optional SFX, score count-up |
 | **S8** | M2.7 + M7 picks | ⬜ Pending | Postgres persistence + extras |
 
 **Immediate actions:**
 
-1. Run manual two-browser QA (create → join → play → FINISHED).
-2. Verify reconnect banner + refresh mid-game.
-3. Merge `cursor/m4-frontend-core` to `main` after QA passes.
-4. Check off M5 portfolio demo items.
+1. Merge `cursor/m4-frontend-core` to `main`.
+2. M6 remainder: a11y audit (`aria-*`, toast roles, contrast), optional SFX, results score count-up.
+3. Optional: sync `openapi.yaml` with rematch / turn-timer fields.
 
 ---
 
@@ -405,8 +403,8 @@ domain (M1) ✅
   └─► redis room orchestration (M2) ✅
         └─► graphql resolvers (M3) ✅
               └─► frontend composables + views (M4) ✅
-                    └─► MVP demo (M5) ← YOU ARE HERE
-                          └─► polish (M6)
+                    └─► MVP demo (M5) ✅
+                          └─► polish (M6) ← YOU ARE HERE
 ```
 
 **Parallelizable now:**
@@ -418,7 +416,7 @@ domain (M1) ✅
 
 ## How to Use This File
 
-1. Pick the **first unchecked** task on the critical path (M4 Frontend).
+1. Pick the **first unchecked** task on the critical path (M6 polish or merge + M2.7).
 2. Read the linked doc section before coding.
 3. Check boxes when merged; update **Current State** table at the top.
 4. If architecture changes, update the relevant `.cursor/*.md` doc **before** checking off dependent tasks.

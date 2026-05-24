@@ -24,8 +24,8 @@ This directory is the **single source of truth** for architecture, game rules, a
 | M2 Infrastructure (Redis) | ✅ Done |
 | M3 GraphQL API | ✅ Done |
 | M4 Frontend core | ✅ Done on branch |
-| M5 Playable MVP | 🔵 Manual QA in progress |
-| M6 Polish (UX) | 🔵 Sprints A–C done; a11y + SFX remain |
+| M5 Playable MVP | ✅ Done (manual QA) |
+| M6 Polish (UX) | 🔵 Current — a11y + SFX remain |
 
 Partial implementations and blockers: [architecture-overview.md](./architecture-overview.md#known-gaps--mvp-blockers).
 
@@ -116,7 +116,8 @@ See **[roadmap.md](./roadmap.md)** for the full checklist, milestones (M0–M7),
 2. ~~Redis live-state layer + guest auth~~ ✅
 3. ~~GraphQL queries, mutations, subscriptions~~ ✅
 4. ~~Vue frontend: home → lobby → play~~ ✅
-5. **Manual two-browser MVP QA** ← current
-6. PostgreSQL persistence for completed matches (non-blocking; deps declared but unused)
+5. ~~Manual two-browser MVP QA (M5)~~ ✅
+6. **M6 polish + merge to `main`** ← current
+7. PostgreSQL persistence for completed matches (non-blocking; deps declared but unused)
 
 **Testing:** Backend tests require Redis (`redis://localhost:6379/15` by default). Run `pytest` from `backend/` after `docker compose up redis` or full stack.

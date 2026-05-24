@@ -267,7 +267,7 @@ Do **not** auto-migrate in production — irrelevant for this project.
 
 1. `docker compose --env-file .env.local up --build` (solo) or `--env-file .env.lan` (Wi‑Fi play)
 2. Open the matching URL (`localhost:5173` or your LAN IP)
-3. Two browser windows → create room → join with code → play full game
+3. Two browser windows → create room → join with code → play full game **(verified manually on branch)**
 4. Optional: show match row in Postgres via `psql` **(blocked until M2.7)**
 
 **Available today:** GraphQL `health`, REST `/health`, 67 backend pytest against Redis.

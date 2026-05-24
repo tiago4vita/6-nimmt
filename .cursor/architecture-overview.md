@@ -37,7 +37,7 @@ flowchart TB
 
 ## Current Implementation Status
 
-**Last reviewed:** 2026-05-23 (aligned with `cursor/m4-frontend-core` + M6 UX)
+**Last reviewed:** 2026-05-23 (M5 manual QA complete on `cursor/m4-frontend-core`)
 
 | Layer | Status | Notes |
 |---|---|---|
@@ -47,7 +47,7 @@ flowchart TB
 | Frontend (M4) | ✅ Complete on branch | Router, composables, Home/Lobby/Game views on `cursor/m4-frontend-core` |
 | M6 UX polish | ✅ Largely complete | Sprints A–C shipped; a11y + SFX remain |
 | PostgreSQL | ⬜ Declared only | `DATABASE_URL` in config; no models, migrations, or runtime usage |
-| Playable MVP (M5) | 🔵 In progress | Manual two-browser QA + reconnect verification |
+| Playable MVP (M5) | ✅ Complete | Manual two-browser QA passed on branch |
 
 **Runnable today:**
 
@@ -56,17 +56,16 @@ flowchart TB
 - **Infrastructure:** `docker-compose.yml` with Postgres 16, Redis 7, backend, frontend.
 - **Tests:** `pytest` — 82 pass against real Redis (DB 15 in tests); frontend `npm run build` passes; no CI pipeline yet.
 
-**Rough completeness toward a playable two-browser demo:** ~85%. Backend and frontend are wired; M5 is end-to-end verification.
+**Rough completeness:** **Playable MVP met.** ~95% toward portfolio-ready demo; M6 polish + merge remain.
 
 See [roadmap.md](./roadmap.md) for milestone checklist and [Known Gaps](#known-gaps--mvp-blockers) below.
 
 ## Known Gaps & MVP Blockers
 
-Remaining deferrals after M4. Track fixes in [roadmap.md](./roadmap.md) unless noted as M7 backlog.
+Remaining deferrals after M5. Track fixes in [roadmap.md](./roadmap.md) unless noted as M7 backlog.
 
 | Gap | Impact | Target fix |
 |---|---|---|
-| **Two-browser E2E not verified** | MVP demo unproven on branch | M5 — manual QA script |
 | **`is_connected` vs domain `is_active`** | Adapter always sets `is_active=True`; disconnect only flips `is_connected`; all seated players block submit barrier until timeout | Document v1 behavior; reconcile later |
 | **`version` bumped, never checked** | No optimistic concurrency on read-modify-write | Acceptable for single worker; Redis WATCH or version check in M7 |
 | **In-process locks & timers** | `asyncio.Lock`, timer tasks, `SubscriberRegistry` are process-local | Single uvicorn worker for MVP; M7 multi-worker hardening |
@@ -75,7 +74,7 @@ Remaining deferrals after M4. Track fixes in [roadmap.md](./roadmap.md) unless n
 | **OpenAPI spec lag** | `openapi.yaml` missing rematch / turn-timer fields | GraphQL + `.cursor/graphql-schema.md` are authoritative |
 | **CI pipeline** | No automated test runs on push | M7 backlog |
 
-**Backend and frontend are wired for MVP.** M5 confirms the two-browser demo end-to-end.
+**Playable MVP (M5) is complete.** Next: merge branch, M6 polish, optional Postgres/CI.
 
 ## Data Flow (Live Play)
 
