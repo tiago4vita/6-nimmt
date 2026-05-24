@@ -37,14 +37,15 @@ flowchart TB
 
 ## Current Implementation Status
 
-**Last reviewed:** 2026-05-23 (aligned with `cursor/m4-frontend-core`)
+**Last reviewed:** 2026-05-23 (aligned with `cursor/m4-frontend-core` + M6 UX)
 
 | Layer | Status | Notes |
 |---|---|---|
 | Domain (M1) | ✅ Complete | Pure rules + unit tests in `backend/app/domain/` |
-| Infrastructure (M2) | ✅ Complete | Redis orchestration; exposed via GraphQL resolvers |
+| Infrastructure (M2) | ✅ Complete | Redis orchestration; per-room turn timer; exposed via GraphQL resolvers |
 | GraphQL API (M3) | ✅ Complete | Queries, mutations, subscriptions in `backend/app/graphql/`; 11 GraphQL tests |
 | Frontend (M4) | ✅ Complete on branch | Router, composables, Home/Lobby/Game views on `cursor/m4-frontend-core` |
+| M6 UX polish | ✅ Largely complete | Sprints A–C shipped; a11y + SFX remain |
 | PostgreSQL | ⬜ Declared only | `DATABASE_URL` in config; no models, migrations, or runtime usage |
 | Playable MVP (M5) | 🔵 In progress | Manual two-browser QA + reconnect verification |
 
@@ -53,9 +54,9 @@ flowchart TB
 - **Backend:** FastAPI + Strawberry at `/graphql` — guest sessions, room lifecycle, game mutations, and WS subscriptions; Redis lifespan + pub/sub listener in `main.py`.
 - **Frontend:** Vue 3 SPA with URQL HTTP + graphql-ws — guest session bootstrap, lobby, live game UI, subscriptions (`frontend/src/`).
 - **Infrastructure:** `docker-compose.yml` with Postgres 16, Redis 7, backend, frontend.
-- **Tests:** `pytest` — 78 pass against real Redis (DB 15 in tests); frontend `npm run build` passes; no CI pipeline yet.
+- **Tests:** `pytest` — 82 pass against real Redis (DB 15 in tests); frontend `npm run build` passes; no CI pipeline yet.
 
-**Rough completeness toward a playable two-browser demo:** ~70%. Backend and frontend are wired; M5 is end-to-end verification.
+**Rough completeness toward a playable two-browser demo:** ~85%. Backend and frontend are wired; M5 is end-to-end verification.
 
 See [roadmap.md](./roadmap.md) for milestone checklist and [Known Gaps](#known-gaps--mvp-blockers) below.
 
@@ -71,6 +72,7 @@ Remaining deferrals after M4. Track fixes in [roadmap.md](./roadmap.md) unless n
 | **In-process locks & timers** | `asyncio.Lock`, timer tasks, `SubscriberRegistry` are process-local | Single uvicorn worker for MVP; M7 multi-worker hardening |
 | **`SESSION_SECRET` unused** | Tokens are UUID + opaque bearer + SHA-256 hash (Option A), not JWT | Keep for optional JWT (Option B) or remove when cleaning config |
 | **PostgreSQL unused** | No match history persistence | M2.7 / S8 — non-blocking for MVP demo |
+| **OpenAPI spec lag** | `openapi.yaml` missing rematch / turn-timer fields | GraphQL + `.cursor/graphql-schema.md` are authoritative |
 | **CI pipeline** | No automated test runs on push | M7 backlog |
 
 **Backend and frontend are wired for MVP.** M5 confirms the two-browser demo end-to-end.
@@ -82,7 +84,7 @@ Remaining deferrals after M4. Track fixes in [roadmap.md](./roadmap.md) unless n
 3. Client subscribes to `myGameViewUpdated(roomId)` → receives **player-specific** view (hand visible, others hidden).
 4. All players `submitCard` during `SUBMIT` → server records submissions atomically in Redis.
 5. When all submissions received → domain engine resolves placement → Redis state updated → pub/sub pushes new views.
-6. On `FINISHED` → optional snapshot persisted to PostgreSQL (not implemented yet).
+6. On `FINISHED` → client shows `ResultsOverlay`; **Rematch** calls `returnToLobby` → `LOBBY` for another game. Optional PostgreSQL snapshot (not implemented yet).
 
 ### Information visibility
 

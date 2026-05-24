@@ -27,6 +27,7 @@ export const PLAYER_PRIVATE_VIEW_FIELDS = `
       phase
       roundNumber
       submitDeadline
+      submitTimeoutSeconds
       winnerIds
       updatedAt
       rows {
@@ -126,6 +127,22 @@ export const LEAVE_ROOM = `
   }
 `
 
+export const RETURN_TO_LOBBY = `
+  ${PLAYER_PRIVATE_VIEW_FIELDS}
+  mutation ReturnToLobby($roomId: ID!) {
+    returnToLobby(roomId: $roomId) {
+      success
+      errors {
+        code
+        message
+      }
+      view {
+        ...PlayerPrivateViewFields
+      }
+    }
+  }
+`
+
 export const START_GAME = `
   ${PLAYER_PRIVATE_VIEW_FIELDS}
   mutation StartGame($roomId: ID!) {
@@ -146,6 +163,22 @@ export const SUBMIT_CARD = `
   ${PLAYER_PRIVATE_VIEW_FIELDS}
   mutation SubmitCard($roomId: ID!, $cardId: ID!) {
     submitCard(roomId: $roomId, cardId: $cardId) {
+      success
+      errors {
+        code
+        message
+      }
+      view {
+        ...PlayerPrivateViewFields
+      }
+    }
+  }
+`
+
+export const UPDATE_SUBMIT_TIMEOUT = `
+  ${PLAYER_PRIVATE_VIEW_FIELDS}
+  mutation UpdateSubmitTimeout($roomId: ID!, $submitTimeoutSeconds: Int!) {
+    updateSubmitTimeout(roomId: $roomId, submitTimeoutSeconds: $submitTimeoutSeconds) {
       success
       errors {
         code

@@ -55,12 +55,11 @@ frontend/src/
       GameRow.vue
       GameBoard.vue
       PlayerStrip.vue
-      SubmissionProgress.vue  # M4 — replace with PlayerStrip highlights (M6, ux-audit.md)
       PhaseIndicator.vue
       ResolveFeed.vue           # Staggered lastResolvedPlays reveal
-      SubmitCountdown.vue       # Activated only if backend exposes a deadline
+      SubmitCountdown.vue       # Circular countdown from room.submitDeadline
       GamePhaseOverlay.vue      # DEAL / RESOLVE / SCORE shimmer
-      ResultsOverlay.vue        # FINISHED modal — primary end-game UX
+      ResultsOverlay.vue        # FINISHED modal — tie ranks, Rematch + Exit room
     lobby/
       RoomCodeInput.vue
       CreateRoomForm.vue
@@ -109,7 +108,7 @@ Boot in `App.vue` or router guard before any GraphQL call.
 // Responsibilities:
 // - Subscribe to myGameViewUpdated(roomId)
 // - Expose reactive refs: room, myHand, mySubmittedCard, phase, players, rows
-// - Methods: submitCard(cardId), leaveRoom()
+// - Methods: submitCard(cardId), leaveRoom(), returnToLobby(), updateSubmitTimeout(seconds), startGame()
 // - On subscription payload: replace entire view (version check optional)
 // - Tear down subscription on unmount
 ```
@@ -138,6 +137,8 @@ Implement with `@vueuse/core` (`useMagicKeys`) or native `keydown` listener; tea
 |---|---|---|
 | `ensureGuestSession` | `useQuery` (pause until mounted) | App init |
 | `createRoom` / `joinRoom` | `useMutation` | Home / lobby |
+| `updateSubmitTimeout` | `useMutation` | Lobby (host adjusts turn timer) |
+| `returnToLobby` | `useMutation` | Results overlay Rematch |
 | `myGameViewUpdated` | `useSubscription` | Game + lobby screens |
 | `submitCard` | `useMutation` | Card click |
 
@@ -210,7 +211,14 @@ Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 
 
 - Props: `deadline: string | null` (ISO from `room.submitDeadline`)
 - Renders mm:ss; amber under 10s, red under 5s; hidden outside `SUBMIT` phase
-- Requires backend to expose `submitDeadline` on `GameRoomPublic` (see [graphql-schema.md](./graphql-schema.md))
+- Deadline length comes from `room.submitTimeoutSeconds` (host sets 3–60s in lobby)
+
+### `ResultsOverlay.vue`
+
+- Shown on `FINISHED` from `GameView` and `ResultsView`
+- Competition ranking for ties (shared `#1`); “Shared victory” title when multiple winners
+- **Rematch** (primary): `returnToLobby` → navigate to lobby
+- **Exit room** (secondary): `leaveRoom` → home
 
 ## Tailwind Design Tokens
 

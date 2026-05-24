@@ -38,13 +38,16 @@ const {
   startGame,
   leaveRoom,
   applyView,
+  updateSubmitTimeout,
 } = useGameRoom(toRef(props, 'roomId'))
 
 const showLeaveConfirm = ref(false)
 const isStarting = ref(false)
 const isLeaving = ref(false)
+const isSavingTimeout = ref(false)
 const isEditingName = ref(false)
 const editedName = ref('')
+const submitTimeoutSeconds = ref(30)
 
 const updateNameMutation = useMutation(UPDATE_DISPLAY_NAME)
 
@@ -67,6 +70,35 @@ watch(me, (player) => {
     editedName.value = player.displayName
   }
 })
+
+watch(
+  () => room.value?.submitTimeoutSeconds,
+  (value) => {
+    if (value !== undefined && !isSavingTimeout.value) {
+      submitTimeoutSeconds.value = value
+    }
+  },
+  { immediate: true },
+)
+
+async function handleSubmitTimeoutChange(): Promise<void> {
+  if (!isHost.value || phase.value !== 'LOBBY') {
+    return
+  }
+
+  isSavingTimeout.value = true
+  try {
+    const errors = await updateSubmitTimeout(submitTimeoutSeconds.value)
+    if (errors.length > 0) {
+      pushToast(errors[0]?.message ?? 'Could not update turn timer', 'error')
+      if (room.value?.submitTimeoutSeconds !== undefined) {
+        submitTimeoutSeconds.value = room.value.submitTimeoutSeconds
+      }
+    }
+  } finally {
+    isSavingTimeout.value = false
+  }
+}
 
 async function handleStartGame(): Promise<void> {
   if (!canStart.value) {
@@ -181,6 +213,28 @@ async function saveDisplayName(): Promise<void> {
         <section class="rounded-xl border border-border bg-surface-raised p-4">
           <h2 class="text-sm font-medium text-text">Waiting for host</h2>
           <p class="mt-2 text-sm text-muted">Minimum 2 players required to start.</p>
+
+          <div v-if="isHost" class="mt-4 space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <label for="submit-timeout" class="font-medium text-text">Turn timer</label>
+              <span class="tabular-nums text-accent">{{ submitTimeoutSeconds }}s</span>
+            </div>
+            <input
+              id="submit-timeout"
+              v-model.number="submitTimeoutSeconds"
+              type="range"
+              min="3"
+              max="60"
+              step="1"
+              class="w-full accent-accent"
+              :disabled="phase !== 'LOBBY' || isSavingTimeout"
+              @change="handleSubmitTimeoutChange"
+            />
+            <p class="text-xs text-muted">3–60 seconds per round · default 30s</p>
+          </div>
+          <p v-else class="mt-4 text-sm text-muted">
+            Turn timer: {{ room.submitTimeoutSeconds }}s per round
+          </p>
 
           <button
             v-if="isHost"

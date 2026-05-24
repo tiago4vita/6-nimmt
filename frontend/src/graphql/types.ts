@@ -10,6 +10,8 @@ export type GameErrorCode =
   | 'CARD_NOT_IN_HAND'
   | 'ALREADY_SUBMITTED'
   | 'PLAYER_NOT_IN_ROOM'
+  | 'INVALID_DISPLAY_NAME'
+  | 'INVALID_SUBMIT_TIMEOUT'
   | 'SESSION_EXPIRED'
 
 export interface Card {
@@ -47,6 +49,7 @@ export interface GameRoomPublic {
   players: PlayerPublic[]
   submissionProgress: SubmissionProgress
   submitDeadline: string | null
+  submitTimeoutSeconds: number
   winnerIds: string[] | null
   updatedAt: string
 }

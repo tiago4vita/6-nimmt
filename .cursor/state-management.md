@@ -4,7 +4,7 @@
 
 **Redis** holds all **live** game data: rooms, seats, hands, submissions, and pub/sub channels for GraphQL subscription fan-out. PostgreSQL is not on the hot path during active play.
 
-**Implementation status (M2):** Sessions, rooms, game orchestration, pub/sub listener, and submit-timeout timers are implemented in `backend/app/infrastructure/`. Submissions live **inside** the room JSON document (not a separate Redis hash). GraphQL subscriptions and WS disconnect wiring are **M3**.
+**Implementation status (M2+):** Sessions, rooms, game orchestration, pub/sub listener, and submit-timeout timers are implemented in `backend/app/infrastructure/`. Submissions live **inside** the room JSON document (not a separate Redis hash). GraphQL subscriptions and WS disconnect wiring are **M3+**.
 
 ## Design Choices
 
@@ -49,7 +49,8 @@ interface GameRoomState {
   version: number;              // Monotonic; bumped on every save (not checked on read — see gaps)
   createdAt: string;
   updatedAt: string;
-  submitDeadline: string | null;
+  submitDeadline: string | null;   // Set during SUBMIT; cleared otherwise
+  submitTimeoutSeconds: number;    // 3–60; default 30; host sets in LOBBY
 
   rows: Array<{ cards: Array<{ id: string; value: number }> }>;
 
@@ -64,10 +65,12 @@ interface GameRoomState {
   }>;
 
   deck: Array<{ id: string; value: number }>;
-  lastResolution: ResolvedPlay[] | null;          // Defined but NOT populated yet — M3
+  lastResolution: ResolvedPlay[] | null;
   winnerIds: string[] | null;
 }
 ```
+
+**Turn timer:** `submitTimeoutSeconds` is stored on the room document. The host updates it in `LOBBY` via `updateSubmitTimeout`. Each `SUBMIT` phase schedules `submitDeadline = now + submitTimeoutSeconds`. The global `SUBMIT_TIMEOUT_SECONDS` env default in `config.py` is legacy; runtime deadlines use the per-room value.
 
 Serialization: standard `json` via Pydantic `model_dump(mode="json")` in `redis.py`.
 
@@ -174,7 +177,7 @@ On disconnect (target — M3):
 - WS `on_disconnect` → `schedule_disconnect(roomId, guestId)`
 - After 5s grace → `mark_disconnected` sets `isConnected = false` (avoids flap on refresh)
 - **Do not** remove seat during active game
-- Submissions already stored remain valid; disconnected players still block the submit barrier until the 30s submit timeout auto-plays for them
+- Submissions already stored remain valid; disconnected players still block the submit barrier until the room submit deadline auto-plays for them
 
 ### `is_connected` vs domain `is_active`
 

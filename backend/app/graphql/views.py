@@ -56,6 +56,7 @@ def build_public_room(room: GameRoomState) -> GameRoomPublic:
         players=players,
         submission_progress=SubmissionProgress(submitted=submitted, required=required),
         submit_deadline=submit_deadline,
+        submit_timeout_seconds=room.submit_timeout_seconds,
         winner_ids=(
             [strawberry.ID(player_id) for player_id in room.winner_ids]
             if room.winner_ids is not None

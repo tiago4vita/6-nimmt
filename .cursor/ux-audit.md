@@ -1,7 +1,7 @@
 # UX Audit — Nielsen Heuristics
 
 **Last reviewed:** 2026-05-23  
-**Scope:** M4 frontend (branch `cursor/m4-frontend-core`) vs. target UX for M5/M6  
+**Scope:** M4–M6 frontend (branch `cursor/m4-frontend-core`) vs. target UX for M5/M6  
 **Related docs:** [frontend-design.md](./frontend-design.md), [frontend-patterns.md](./frontend-patterns.md), [graphql-schema.md](./graphql-schema.md), [roadmap.md](./roadmap.md)
 
 This document is the **actionable UX backlog** derived from a Nielsen heuristic review. It records current gaps, target behavior, and implementation order. Update this file when items ship; keep [frontend-design.md](./frontend-design.md) aligned with locked-in decisions.
@@ -10,20 +10,22 @@ This document is the **actionable UX backlog** derived from a Nielsen heuristic 
 
 ## Executive summary
 
-M4 delivered a playable UI wired to GraphQL subscriptions; M6 now ships the full Nielsen heuristic backlog (Sprints A–C).
+M4 delivered a playable UI wired to GraphQL subscriptions; M6 ships the Nielsen heuristic backlog (Sprints A–C) plus post-game and lobby settings.
 
-| Area | Documented | Shipped (M6) |
+| Area | Documented | Shipped (M6+) |
 |---|---|---|
-| Turn timer | `SubmitCountdown.vue` planned | Circular countdown in `GameHudBar`; backend exposes `submitDeadline` |
+| Turn timer | `SubmitCountdown.vue` planned | Circular countdown in `GameHudBar`; `submitDeadline` + configurable `submitTimeoutSeconds` (3–60s) |
 | Card confirm flow | Single-click submit | Select → `CardConfirmBar` → submit, with 10s client timeout + retry |
 | Submission status | `SubmissionProgress` bar | `PlayerStrip` border highlights (submitted / waiting / away / yours) |
 | Loading states | Skeleton/spinner spec | `LoadingShell.vue` variants on Home, Lobby, Game |
 | Error details | Toast with message | Expandable “More details” + optional Retry action |
 | Keyboard shortcuts | `1`–`N`, Enter, Esc | Wired via `useGameShortcuts` (hand quick-select, confirm, Esc) |
 | Rules help | Text bullets | Visual `RulesDrawer` with `CardTile` + mini `GameRow` examples |
-| HUD layout | Stacked indicators | Compact `GameHudBar` (Round · Phase · Timer · Room) |
+| HUD layout | Stacked indicators | Compact `GameHudBar` (Round · Phase · Timer · Room · last resolve) |
+| Post-game actions | Back to lobby / Leave | **Rematch** + **Exit room**; tie-aware results overlay |
+| Lobby settings | — | Host turn-timer slider synced via `updateSubmitTimeout` |
 
-**Status:** Sprint A, B, and C are now shipped on the M6 branch.
+**Status:** Sprint A, B, and C shipped. Remaining M6 items: full a11y audit, optional SFX, results score count-up animation.
 
 ---
 
@@ -291,6 +293,12 @@ Aligned with [roadmap.md](./roadmap.md) (M5 verification → M6 polish).
 - [x] Consolidate HUD layout (`GameHudBar.vue`)
 - [x] Reconcile [frontend-design.md](./frontend-design.md) with shipped behavior
 
+### Post-Sprint — End game & lobby settings
+
+- [x] Tie-aware `ResultsOverlay` (shared rank, trophy rows, “Shared victory”)
+- [x] `returnToLobby` mutation + Rematch / Exit room actions
+- [x] Host-configurable `submitTimeoutSeconds` (3–60s) in `LobbyView`
+
 ---
 
 ## Frontend-only vs backend work
@@ -304,8 +312,10 @@ Aligned with [roadmap.md](./roadmap.md) (M5 verification → M6 polish).
 | Keyboard shortcuts | ✅ | — |
 | Error “More details” | ✅ | — |
 | Visual rules drawer | ✅ | — |
-| Turn countdown timer | — | ✅ Expose `submitDeadline` on `GameRoomPublic` |
-| Timeout auto-play message | Partial | Optional: `autoSubmitted: Boolean` on `ResolvedPlay` |
+| Turn countdown timer | — | ✅ `submitDeadline` + `submitTimeoutSeconds` on `GameRoomPublic` |
+| Lobby turn timer UI | ✅ | ✅ `updateSubmitTimeout` + host slider |
+| Post-game rematch | ✅ | ✅ `returnToLobby` + overlay actions |
+| Timeout auto-play message | Partial | ✅ Brief overlay in `GameView`; optional: `autoSubmitted` on `ResolvedPlay` |
 
 ---
 

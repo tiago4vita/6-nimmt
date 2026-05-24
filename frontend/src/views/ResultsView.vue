@@ -11,13 +11,17 @@ import PlayerStrip from '@/components/game/PlayerStrip.vue'
 import ResultsOverlay from '@/components/game/ResultsOverlay.vue'
 import { isFinishedPhase, isPlayPhase } from '@/graphql/types'
 import { useGameRoom } from '@/composables/useGameRoom'
+import { useToast } from '@/composables/useToast'
 
 const props = defineProps<{
   roomId: string
 }>()
 
 const router = useRouter()
+const { push: pushToast } = useToast()
 const showResults = ref(true)
+const isRematching = ref(false)
+const isLeaving = ref(false)
 
 const {
   room,
@@ -27,6 +31,8 @@ const {
   myPlayerId,
   isLoading,
   isReconnecting,
+  leaveRoom,
+  returnToLobby,
 } = useGameRoom(toRef(props, 'roomId'))
 
 watch(
@@ -42,6 +48,44 @@ watch(
   },
   { immediate: true },
 )
+
+async function handleRematch(): Promise<void> {
+  isRematching.value = true
+  try {
+    const errors = await returnToLobby()
+    if (errors.length > 0) {
+      pushToast({
+        message: errors[0]?.message ?? 'Could not return to lobby',
+        variant: 'error',
+        details: errors[0]?.code,
+      })
+      return
+    }
+    showResults.value = false
+    await router.replace({ name: 'lobby', params: { roomId: props.roomId } })
+  } finally {
+    isRematching.value = false
+  }
+}
+
+async function handleExitRoom(): Promise<void> {
+  isLeaving.value = true
+  try {
+    const errors = await leaveRoom()
+    if (errors.length > 0) {
+      pushToast({
+        message: errors[0]?.message ?? 'Could not leave room',
+        variant: 'error',
+        details: errors[0]?.code,
+      })
+      return
+    }
+    showResults.value = false
+    await router.push({ name: 'home' })
+  } finally {
+    isLeaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -65,7 +109,10 @@ watch(
       :open="showResults"
       :players="players"
       :winner-ids="room?.winnerIds ?? null"
-      @close="showResults = false"
+      :is-rematching="isRematching"
+      :is-leaving="isLeaving"
+      @rematch="handleRematch"
+      @leave="handleExitRoom"
     />
   </AppShell>
 </template>

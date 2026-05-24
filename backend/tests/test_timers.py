@@ -14,28 +14,28 @@ pytestmark = pytest.mark.asyncio
 
 
 async def _seat_two_and_start(timeout_seconds: int) -> GameRoomState:
-    settings.submit_timeout_seconds = timeout_seconds
     host = await rooms.create_room(guest_id="host", display_name="Host")
     await rooms.join_room(code=host.code, guest_id="guest", display_name="Bob")
+    await rooms.update_submit_timeout(
+        room_id=host.id,
+        guest_id="host",
+        submit_timeout_seconds=timeout_seconds,
+    )
     return await game.start_game(room_id=host.id, guest_id="host")
 
 
 async def test_submit_timeout_auto_resolves_round(redis_client: Redis) -> None:
-    original_timeout = settings.submit_timeout_seconds
-    try:
-        room = await _seat_two_and_start(timeout_seconds=1)
-        assert room.phase == GamePhase.SUBMIT
-        assert room.round_number == 1
-        original_round = room.round_number
+    room = await _seat_two_and_start(timeout_seconds=3)
+    assert room.phase == GamePhase.SUBMIT
+    assert room.round_number == 1
+    original_round = room.round_number
 
-        await asyncio.sleep(1.5)
+    await asyncio.sleep(3.5)
 
-        fresh = await rooms.require_room(room.id)
-        assert fresh.round_number == original_round + 1 or fresh.phase == GamePhase.FINISHED
-        for player in fresh.players:
-            assert player.submission is None
-    finally:
-        settings.submit_timeout_seconds = original_timeout
+    fresh = await rooms.require_room(room.id)
+    assert fresh.round_number == original_round + 1 or fresh.phase == GamePhase.FINISHED
+    for player in fresh.players:
+        assert player.submission is None
 
 
 async def test_disconnect_grace_marks_disconnected(redis_client: Redis) -> None:

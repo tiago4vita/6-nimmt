@@ -45,6 +45,7 @@ class GameRoomState(BaseModel):
     created_at: datetime
     updated_at: datetime
     submit_deadline: datetime | None = None
+    submit_timeout_seconds: int = Field(default=30, ge=3, le=60)
     players: list[PlayerInRoom] = Field(default_factory=list)
     rows: list[RowDTO] = Field(default_factory=list)
     deck: list[CardDTO] = Field(default_factory=list)

@@ -134,6 +134,37 @@ class Mutation:
         return _success(_private_or_none(room, guest_id))
 
     @strawberry.mutation
+    async def update_submit_timeout(
+        self,
+        info: Info[GraphQLContext, None],
+        room_id: strawberry.ID,
+        submit_timeout_seconds: int,
+    ) -> MutationResult:
+        guest_id = await _require_guest(info)
+        try:
+            room = await room_service.update_submit_timeout(
+                room_id=str(room_id),
+                guest_id=guest_id,
+                submit_timeout_seconds=submit_timeout_seconds,
+            )
+        except InfrastructureError as exc:
+            return _failure_from_exception(exc)
+        return _success(_private_or_none(room, guest_id))
+
+    @strawberry.mutation
+    async def return_to_lobby(
+        self, info: Info[GraphQLContext, None], room_id: strawberry.ID
+    ) -> MutationResult:
+        guest_id = await _require_guest(info)
+        try:
+            room = await game_service.return_to_lobby(
+                room_id=str(room_id), guest_id=guest_id
+            )
+        except InfrastructureError as exc:
+            return _failure_from_exception(exc)
+        return _success(_private_or_none(room, guest_id))
+
+    @strawberry.mutation
     async def start_game(
         self, info: Info[GraphQLContext, None], room_id: strawberry.ID
     ) -> MutationResult:

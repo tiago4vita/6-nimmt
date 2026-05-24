@@ -39,12 +39,14 @@ const {
   subscriptionError,
   submitCard,
   leaveRoom,
+  returnToLobby,
 } = useGameRoom(toRef(props, 'roomId'))
 
 const roundNumber = computed(() => room.value?.roundNumber)
 
 const showLeaveConfirm = ref(false)
 const isLeaving = ref(false)
+const isRematching = ref(false)
 const showResults = ref(false)
 
 const {
@@ -194,10 +196,34 @@ async function confirmLeave(): Promise<void> {
       return
     }
     showLeaveConfirm.value = false
+    showResults.value = false
     await router.push({ name: 'home' })
   } finally {
     isLeaving.value = false
   }
+}
+
+async function handleRematch(): Promise<void> {
+  isRematching.value = true
+  try {
+    const errors = await returnToLobby()
+    if (errors.length > 0) {
+      pushToast({
+        message: errors[0]?.message ?? 'Could not return to lobby',
+        variant: 'error',
+        details: errors[0]?.code,
+      })
+      return
+    }
+    showResults.value = false
+    await router.replace({ name: 'lobby', params: { roomId: props.roomId } })
+  } finally {
+    isRematching.value = false
+  }
+}
+
+async function handleExitRoom(): Promise<void> {
+  await confirmLeave()
 }
 </script>
 
@@ -278,7 +304,10 @@ async function confirmLeave(): Promise<void> {
       :open="showResults"
       :players="players"
       :winner-ids="room?.winnerIds ?? null"
-      @close="showResults = false"
+      :is-rematching="isRematching"
+      :is-leaving="isLeaving"
+      @rematch="handleRematch"
+      @leave="handleExitRoom"
     />
 
     <ConfirmDialog

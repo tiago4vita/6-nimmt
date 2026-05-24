@@ -8,6 +8,7 @@ from app.infrastructure.errors import (
     GameAlreadyStartedError,
     InfrastructureError,
     InvalidDisplayNameError,
+    InvalidSubmitTimeoutError,
     InvalidPhaseError,
     NotEnoughPlayersError,
     NotHostError,
@@ -35,6 +36,7 @@ class GameErrorCode(enum.Enum):
     PLAYER_NOT_IN_ROOM = "PLAYER_NOT_IN_ROOM"
     NOT_ENOUGH_PLAYERS = "NOT_ENOUGH_PLAYERS"
     INVALID_DISPLAY_NAME = "INVALID_DISPLAY_NAME"
+    INVALID_SUBMIT_TIMEOUT = "INVALID_SUBMIT_TIMEOUT"
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
@@ -52,6 +54,7 @@ _EXCEPTION_TO_CODE: dict[type[InfrastructureError], GameErrorCode] = {
     CardNotInHandError: GameErrorCode.CARD_NOT_IN_HAND,
     NotEnoughPlayersError: GameErrorCode.NOT_ENOUGH_PLAYERS,
     InvalidDisplayNameError: GameErrorCode.INVALID_DISPLAY_NAME,
+    InvalidSubmitTimeoutError: GameErrorCode.INVALID_SUBMIT_TIMEOUT,
 }
 
 

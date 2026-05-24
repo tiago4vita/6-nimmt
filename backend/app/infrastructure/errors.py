@@ -57,3 +57,7 @@ class NotEnoughPlayersError(InfrastructureError):
 
 class InvalidDisplayNameError(InfrastructureError):
     code = "INVALID_DISPLAY_NAME"
+
+
+class InvalidSubmitTimeoutError(InfrastructureError):
+    code = "INVALID_SUBMIT_TIMEOUT"

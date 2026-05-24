@@ -7,8 +7,10 @@ import {
   LEAVE_ROOM,
   MY_GAME_VIEW,
   MY_GAME_VIEW_UPDATED,
+  RETURN_TO_LOBBY,
   START_GAME,
   SUBMIT_CARD,
+  UPDATE_SUBMIT_TIMEOUT,
 } from '@/graphql/operations'
 import type { GameError, MutationResult, PlayerPrivateView } from '@/graphql/types'
 
@@ -32,8 +34,10 @@ export function useGameRoom(roomId: MaybeRef<string>) {
   })
 
   const leaveRoomMutation = useMutation(LEAVE_ROOM)
+  const returnToLobbyMutation = useMutation(RETURN_TO_LOBBY)
   const startGameMutation = useMutation(START_GAME)
   const submitCardMutation = useMutation(SUBMIT_CARD)
+  const updateSubmitTimeoutMutation = useMutation(UPDATE_SUBMIT_TIMEOUT)
 
   watch(
     () => bootstrapQuery.data.value,
@@ -100,6 +104,11 @@ export function useGameRoom(roomId: MaybeRef<string>) {
     return applyMutationView(result.data?.leaveRoom as MutationResult | undefined)
   }
 
+  async function returnToLobby(): Promise<GameError[]> {
+    const result = await returnToLobbyMutation.executeMutation({ roomId: roomIdRef.value })
+    return applyMutationView(result.data?.returnToLobby as MutationResult | undefined)
+  }
+
   async function startGame(): Promise<GameError[]> {
     const result = await startGameMutation.executeMutation({ roomId: roomIdRef.value })
     return applyMutationView(result.data?.startGame as MutationResult | undefined)
@@ -111,6 +120,14 @@ export function useGameRoom(roomId: MaybeRef<string>) {
       cardId,
     })
     return applyMutationView(result.data?.submitCard as MutationResult | undefined)
+  }
+
+  async function updateSubmitTimeout(submitTimeoutSeconds: number): Promise<GameError[]> {
+    const result = await updateSubmitTimeoutMutation.executeMutation({
+      roomId: roomIdRef.value,
+      submitTimeoutSeconds,
+    })
+    return applyMutationView(result.data?.updateSubmitTimeout as MutationResult | undefined)
   }
 
   async function refetchView(): Promise<void> {
@@ -134,8 +151,10 @@ export function useGameRoom(roomId: MaybeRef<string>) {
     queryError,
     subscriptionError,
     leaveRoom,
+    returnToLobby,
     startGame,
     submitCard,
+    updateSubmitTimeout,
     refetchView,
     applyView,
   }

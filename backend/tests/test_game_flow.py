@@ -10,6 +10,7 @@ from app.infrastructure.errors import (
     AlreadySubmittedError,
     CardNotInHandError,
     InvalidPhaseError,
+    InvalidSubmitTimeoutError,
     NotEnoughPlayersError,
     NotHostError,
 )
@@ -127,6 +128,66 @@ async def test_full_two_player_game_reaches_finished(redis_client: Redis) -> Non
     for player in final.players:
         assert player.hand == []
     assert final.submit_deadline is None
+
+
+async def test_update_submit_timeout_in_lobby(redis_client: Redis) -> None:
+    room = await _seat_players(2)
+    assert room.submit_timeout_seconds == 30
+
+    updated = await rooms.update_submit_timeout(
+        room_id=room.id,
+        guest_id="g0",
+        submit_timeout_seconds=45,
+    )
+    assert updated.submit_timeout_seconds == 45
+
+    with pytest.raises(InvalidSubmitTimeoutError):
+        await rooms.update_submit_timeout(
+            room_id=room.id,
+            guest_id="g0",
+            submit_timeout_seconds=2,
+        )
+
+    with pytest.raises(NotHostError):
+        await rooms.update_submit_timeout(
+            room_id=room.id,
+            guest_id="g1",
+            submit_timeout_seconds=15,
+        )
+
+
+async def test_start_game_uses_room_submit_timeout(redis_client: Redis) -> None:
+    room = await _seat_players(2)
+    await rooms.update_submit_timeout(
+        room_id=room.id,
+        guest_id="g0",
+        submit_timeout_seconds=12,
+    )
+
+    started = await game.start_game(room_id=room.id, guest_id="g0")
+    assert started.submit_deadline is not None
+    delta = started.submit_deadline - started.updated_at
+    assert 11 <= delta.total_seconds() <= 13
+
+
+async def test_return_to_lobby_from_finished(redis_client: Redis) -> None:
+    room = await _seat_players(2)
+    await game.start_game(room_id=room.id, guest_id="g0")
+
+    for _ in range(15):
+        state = await _play_one_round(room.id)
+        if state.phase == GamePhase.FINISHED:
+            break
+
+    reset = await game.return_to_lobby(room_id=room.id, guest_id="g1")
+    assert reset.phase == GamePhase.LOBBY
+    assert reset.round_number == 0
+    assert reset.winner_ids is None
+    assert reset.rows == []
+    for player in reset.players:
+        assert player.hand == []
+        assert player.bones_total == 0
+        assert player.submission is None
 
 
 async def test_cannot_submit_in_lobby(redis_client: Redis) -> None:

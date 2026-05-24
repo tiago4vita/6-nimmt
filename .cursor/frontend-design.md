@@ -146,15 +146,17 @@ Social waiting room; host starts the game.
 ├──────────────────────────────┬─────────────────────────────┤
 │  Players (4/10)              │  Waiting for host…          │
 │  ● Alice  (host)             │                             │
-│  ● You                       │  Min 2 players to start     │
-│  ○ Bob    (away)             │                             │
-│  [ Edit name ]               │  [ Start game ] (host only) │
+│  ● You                       │  Turn timer  [====●===] 30s │
+│  ○ Bob    (away)             │  (host slider: 3–60s)       │
+│  [ Edit name ]               │  Min 2 players to start     │
+│                              │  [ Start game ] (host only) │
 │                              │  or "Host will start…"      │
 └──────────────────────────────┴─────────────────────────────┘
 ```
 
 - **Layout:** two-column on `lg+`, single column fallback.
 - **Reactive:** `myGameViewUpdated` drives player list, `isConnected` dots, host badge; phase auto-navigates to `/play` once `phase >= SUBMIT`.
+- **Turn timer:** Host adjusts `submitTimeoutSeconds` (3–60, default 30) via range slider; synced to all lobby clients via subscription. Guests see read-only “Turn timer: Ns per round”.
 - **Micro-delights:** Copy code swaps the icon to Lucide `Check` + toast "Copied"; new player joins slide into the list (150ms); host's `Start game` button gains an amber pulse once at least 2 players are connected.
 
 ### 3. GameView — `/room/:roomId/play`
@@ -202,18 +204,21 @@ Primary end-game UX is an overlay on `GameView` (backdrop-blur, dimmed board). `
 
 ```
 ┌─────────────────────────────────────┐
-│           Game over                 │
+│  🏆 Final scores / Shared victory     │
+│  Tie at 4 bones — Alice & Bob         │
 │                                     │
-│   🏆 Alice — 23 pts                 │
-│      Bob   — 31 pts                 │
-│      You   — 45 pts                 │
+│  #1 🏆 Alice — 4 bones              │
+│  #1 🏆 Bob   — 4 bones              │
+│      You   — 12 bones               │
 │                                     │
-│  [ Back to lobby ]  [ Leave room ]  │
+│  [ Rematch ]  [ Exit room ]         │
 └─────────────────────────────────────┘
 ```
 
-- **Micro-delights:** Winner row carries a subtle gold left border; score numbers count up (400ms). No confetti — stays in the minimalist register.
-- **Ties:** Shared first place — both rows get the gold border and trophy icon.
+- **Primary action:** **Rematch** (accent) — calls `returnToLobby`, navigates to lobby for a new game.
+- **Secondary action:** **Exit room** (neutral) — `leaveRoom` + home.
+- **Micro-delights:** Winner row carries a subtle gold left border; tied winners share rank `#1`. No confetti — stays in the minimalist register.
+- **Ties:** Title becomes “Shared victory”; both winner rows get gold left border + per-row trophy icon; ranks use competition ranking (1, 1, 3…).
 
 ## Motion Catalog
 

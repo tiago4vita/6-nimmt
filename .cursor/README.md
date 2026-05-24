@@ -23,8 +23,9 @@ This directory is the **single source of truth** for architecture, game rules, a
 | M1 Domain engine | ✅ Done |
 | M2 Infrastructure (Redis) | ✅ Done |
 | M3 GraphQL API | ✅ Done |
-| M4 Frontend core | ⬜ **Current focus** |
-| M5 Playable MVP | ⬜ Blocked on M4 |
+| M4 Frontend core | ✅ Done on branch |
+| M5 Playable MVP | 🔵 Manual QA in progress |
+| M6 Polish (UX) | 🔵 Sprints A–C done; a11y + SFX remain |
 
 Partial implementations and blockers: [architecture-overview.md](./architecture-overview.md#known-gaps--mvp-blockers).
 
@@ -67,21 +68,19 @@ Partial implementations and blockers: [architecture-overview.md](./architecture-
 │   │   ├── domain/          # Pure game logic — cards, rows, game, resolve, scoring (implemented)
 │   │   ├── infrastructure/  # Redis client, sessions, rooms, game orchestration, pub/sub, timers (implemented)
 │   │   └── graphql/         # Strawberry schema, resolvers, subscriptions, view builders (implemented)
-│   ├── tests/               # 78 pytest (domain + infrastructure + graphql + openapi)
+│   ├── tests/               # 82 pytest (domain + infrastructure + graphql + openapi)
 │   ├── openapi.yaml         # Contract reference (implemented ops documented)
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── pyproject.toml
 ├── frontend/
 │   ├── src/
-│   │   ├── App.vue          # Placeholder landing (M4 pending)
+│   │   ├── views/           # HomeView, LobbyView, GameView, ResultsView
+│   │   ├── components/      # game/, lobby/, layout/, feedback/
+│   │   ├── composables/     # useGameRoom, useGuestSession, useCardSelection, …
+│   │   ├── graphql/         # client.ts, operations.ts, types.ts
 │   │   ├── main.ts
-│   │   ├── style.css        # Tailwind v4 entry
-│   │   ├── graphql/client.ts
-│   │   ├── lib/guest-session.ts  # Read-only auth headers (M4 will write session)
-│   │   ├── composables/  # planned
-│   │   ├── components/   # planned
-│   │   └── views/        # planned
+│   │   └── style.css        # Tailwind v4 + design tokens
 │   ├── .env.example
 │   ├── Dockerfile
 │   └── package.json
@@ -116,7 +115,8 @@ See **[roadmap.md](./roadmap.md)** for the full checklist, milestones (M0–M7),
 1. ~~`backend/app/domain/` — Pure game engine + unit tests~~ ✅
 2. ~~Redis live-state layer + guest auth~~ ✅
 3. ~~GraphQL queries, mutations, subscriptions~~ ✅
-4. **Vue frontend: home → lobby → play** ← current
-5. PostgreSQL persistence for completed matches (non-blocking for MVP; deps declared but unused)
+4. ~~Vue frontend: home → lobby → play~~ ✅
+5. **Manual two-browser MVP QA** ← current
+6. PostgreSQL persistence for completed matches (non-blocking; deps declared but unused)
 
 **Testing:** Backend tests require Redis (`redis://localhost:6379/15` by default). Run `pytest` from `backend/` after `docker compose up redis` or full stack.
