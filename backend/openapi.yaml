@@ -244,6 +244,7 @@ x-websocket:
             rows { index cards { id value bones } }
             players { id displayName bonesTotal hasSubmitted isConnected }
             submissionProgress { submitted required }
+            submitDeadline
           }
         }
       }
@@ -477,6 +478,11 @@ components:
             $ref: "#/components/schemas/PlayerPublic"
         submissionProgress:
           $ref: "#/components/schemas/SubmissionProgress"
+        submitDeadline:
+          allOf:
+            - $ref: "#/components/schemas/DateTime"
+          nullable: true
+          description: Non-null during SUBMIT phase; drives the client-side turn countdown.
         winnerIds:
           type: array
           items:
@@ -685,5 +691,5 @@ x-game-rules:
       description: If the card is lower than all row tails, auto-select the row with fewest bones (tie-break lowest tail)
   submissionBarrier:
     description: All active players must submit before resolve_turn runs
-    timeoutSeconds: 30
+    timeoutSeconds: 60
     autoPlay: lowest card in hand

@@ -4,9 +4,13 @@
 
 **M3 — complete.** Full schema in `backend/app/graphql/` — queries, mutations, subscriptions, public/private view builders. OpenAPI contract: `backend/openapi.yaml`.
 
-**Delivered in M3:**
+**Delivered in M3 + post-M4:**
 
 - `last_resolution` populated via `apply_game_state` during turn resolve
+- `submitDeadline` on `GameRoomPublic` (non-null during `SUBMIT`; drives `SubmitCountdown`)
+- `submitTimeoutSeconds` on `GameRoomPublic` (lobby-configurable per room; 3–60, default 30)
+- `returnToLobby` mutation — reset `FINISHED` → `LOBBY` for rematch
+- `updateSubmitTimeout` mutation — host-only lobby setting
 - `SubscriberRegistry` → `gameRoomUpdated` / `myGameViewUpdated`
 - WS disconnect → `schedule_disconnect` on subscription teardown; `reconnect` on subscribe
 - `InfrastructureError.code` → `GameErrorCode` in mutation payloads; HTTP 401 for auth failures
@@ -43,6 +47,8 @@ enum GameErrorCode {
   ALREADY_SUBMITTED
   PLAYER_NOT_IN_ROOM
   SESSION_EXPIRED
+  INVALID_DISPLAY_NAME
+  INVALID_SUBMIT_TIMEOUT
 }
 ```
 
@@ -80,7 +86,9 @@ type GameRoomPublic {
   rows: [Row!]!
   players: [PlayerPublic!]!
   submissionProgress: SubmissionProgress!
-  winnerIds: [ID!]     # Non-null when phase == FINISHED
+  submitDeadline: DateTime       # Non-null during SUBMIT; null otherwise. Drives SubmitCountdown.
+  submitTimeoutSeconds: Int!    # Per-room turn limit (3–60). Host sets in LOBBY; used for each SUBMIT deadline.
+  winnerIds: [ID!]              # Non-null when phase == FINISHED
   updatedAt: DateTime!
 }
 
@@ -134,6 +142,8 @@ type Mutation {
   createRoom(displayName: String!, maxPlayers: Int = 10): MutationResult!
   joinRoom(code: String!, displayName: String!): MutationResult!
   leaveRoom(roomId: ID!): MutationResult!
+  returnToLobby(roomId: ID!): MutationResult!   # FINISHED → LOBBY; clears board/scores for rematch
+  updateSubmitTimeout(roomId: ID!, submitTimeoutSeconds: Int!): MutationResult!  # Host, LOBBY only
   startGame(roomId: ID!): MutationResult!      # Host only, LOBBY only
   submitCard(roomId: ID!, cardId: ID!): MutationResult!
   updateDisplayName(displayName: String!): MutationResult!
@@ -158,7 +168,9 @@ type GameError {
 | `createRoom` | Authenticated guest | New Redis room, creator = host |
 | `joinRoom` | LOBBY, not full | Add seat, broadcast public state |
 | `leaveRoom` | In room | Remove seat or mark disconnected mid-game |
-| `startGame` | Host, LOBBY, ≥2 players | Deal, seed rows, → SUBMIT |
+| `returnToLobby` | Seated, `FINISHED` | Reset room to `LOBBY`; clear hands, rows, scores, winners |
+| `updateSubmitTimeout` | Host, `LOBBY` | Set per-round submit limit (3–60 seconds) |
+| `startGame` | Host, LOBBY, ≥2 players | Deal, seed rows, → SUBMIT (deadline = now + `submitTimeoutSeconds`) |
 | `submitCard` | SUBMIT, card in hand | Lock submission; maybe trigger resolve |
 
 ## Subscriptions
@@ -224,6 +236,7 @@ subscription MyGameView($roomId: ID!) {
     room {
       phase
       roundNumber
+      submitTimeoutSeconds
       rows { index cards { id value bones } }
       players { id displayName bonesTotal hasSubmitted isConnected }
       submissionProgress { submitted required }

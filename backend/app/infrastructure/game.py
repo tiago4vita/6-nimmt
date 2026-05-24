@@ -35,7 +35,7 @@ def _now() -> datetime:
 
 
 def _schedule_submit_deadline(room: GameRoomState) -> None:
-    deadline = _now() + timedelta(seconds=settings.submit_timeout_seconds)
+    deadline = _now() + timedelta(seconds=room.submit_timeout_seconds)
     room.submit_deadline = deadline
     timers.schedule_submit_deadline(room.id, deadline)
 
@@ -51,6 +51,40 @@ def _on_resolved(room: GameRoomState) -> None:
 async def _save_and_publish(room: GameRoomState, *, client: Redis | None = None) -> None:
     await rooms.save_room(room, client=client)
     await pubsub.publish_state_update(room.id, version=room.version, phase=room.phase)
+
+
+def _reset_room_to_lobby(room: GameRoomState) -> None:
+    room.phase = GamePhase.LOBBY
+    room.round_number = 0
+    room.rows = []
+    room.deck = []
+    room.last_resolution = None
+    room.winner_ids = None
+    room.submit_deadline = None
+    timers.cancel_submit_deadline(room.id)
+    for player in room.players:
+        player.hand = []
+        player.bones_total = 0
+        player.submission = None
+
+
+async def return_to_lobby(
+    *,
+    room_id: str,
+    guest_id: str,
+    client: Redis | None = None,
+) -> GameRoomState:
+    async with room_lock(room_id):
+        room = await rooms.load_room(room_id, client=client)
+        if room is None:
+            raise RoomNotFoundError(f"Room {room_id} not found")
+        _validate_seated(room, guest_id)
+        if room.phase != GamePhase.FINISHED:
+            raise InvalidPhaseError("Room is not ready for a rematch")
+
+        _reset_room_to_lobby(room)
+        await _save_and_publish(room, client=client)
+        return room
 
 
 async def start_game(

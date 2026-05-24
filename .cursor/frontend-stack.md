@@ -2,20 +2,18 @@
 
 ## Current scaffold status
 
-**Last reviewed:** 2026-05-23
+**Last reviewed:** 2026-05-23 (`cursor/m4-frontend-core`)
 
 | Item | Status |
 |---|---|
 | Vite + Vue 3 + TypeScript + Tailwind v4 | ✅ Wired |
-| URQL HTTP + WebSocket client | ✅ `src/graphql/client.ts` |
-| Auth headers from localStorage | ✅ Read-only via `src/lib/guest-session.ts` |
-| `ensureGuestSession` / GraphQL operations | ⬜ M3 + M4 |
-| Vue Router | ⬜ Installed, not wired |
-| `@vueuse/core` | ⬜ Installed, unused |
-| Design system (Inter, Lucide, dark theme) | ⬜ M4/M6 |
-| `App.vue` | Placeholder light landing — not design-spec UI |
-
-**Cleanup note:** both `vite.config.ts` and `vite.config.js` exist; prefer `.ts` and remove duplicate when touching config.
+| URQL HTTP + WebSocket client | ✅ `src/graphql/client.ts` + `connection.ts` (WS lifecycle) |
+| Auth headers from localStorage | ✅ `src/lib/guest-session.ts` read/write |
+| `ensureGuestSession` / GraphQL operations | ✅ `useGuestSession` + `operations.ts` |
+| Vue Router | ✅ `src/router/index.ts` — Home, Lobby, Game, Results |
+| `@vueuse/core` | ✅ `useLocalStorage` in SfxToggle |
+| Design system (Inter, Lucide, dark theme) | ✅ M4 baseline (M6 polish pending) |
+| `App.vue` | ✅ Router shell; session boot via router guard only |
 
 ## Locked-In Decisions
 

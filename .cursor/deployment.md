@@ -73,7 +73,7 @@ services:
     environment:
       DATABASE_URL: postgresql+asyncpg://nimmt:nimmt@postgres:5432/nimmt
       REDIS_URL: redis://redis:6379/0
-      CORS_ORIGINS: http://localhost:5173
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
       SESSION_SECRET: dev-only-change-me
     volumes:
       - ./backend:/app
@@ -91,8 +91,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      VITE_GRAPHQL_HTTP_URL: http://localhost:8000/graphql
-      VITE_GRAPHQL_WS_URL: ws://localhost:8000/graphql
+      VITE_GRAPHQL_HTTP_URL: ${VITE_GRAPHQL_HTTP_URL:-http://localhost:8000/graphql}
+      VITE_GRAPHQL_WS_URL: ${VITE_GRAPHQL_WS_URL:-ws://localhost:8000/graphql}
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -103,11 +103,37 @@ volumes:
   postgres_data:
 ```
 
+See repository root `.env.local`, `.env.lan`, and `.env.example` for switching between solo dev and LAN play (`docker compose --env-file .env.lan up --build`).
+
 ### Notes
 
-- Frontend env uses **localhost** URLs because the browser runs on the host, not inside the container network.
-- Backend CORS must allow `http://localhost:5173`.
-- GraphQL WebSocket typically shares `/graphql` path on the same FastAPI app (Strawberry + uvicorn).
+- Frontend env uses **browser-reachable URLs** (localhost or your LAN IP), not Docker service names — the browser runs on the host/device, not inside the container network.
+- Backend CORS must include every origin players use (e.g. both `localhost` and LAN IP when testing with a friend).
+- GraphQL WebSocket shares `/graphql` on the same FastAPI app (Strawberry + uvicorn).
+- Compose reads `${VAR}` from the shell environment or from `--env-file`. Defaults in `docker-compose.yml` target solo local dev.
+
+### Environment presets (local vs LAN)
+
+| File | Use case | Open in browser |
+|---|---|---|
+| `.env.local` | Solo dev on this machine | `http://localhost:5173` |
+| `.env.lan` | Play with a friend on Wi‑Fi | `http://192.168.1.11:5173` (update IP if yours changes) |
+
+```bash
+# Local
+docker compose --env-file .env.local up --build
+
+# LAN — everyone (including host) uses the LAN URL, not localhost
+docker compose --env-file .env.lan up --build
+```
+
+After changing `VITE_*` URLs, restart the stack (or recreate the frontend container) so Vite picks up new values. If frontend deps change, renew the anonymous `node_modules` volume:
+
+```bash
+docker compose --env-file .env.lan up -d --force-recreate --renew-anon-volumes frontend
+```
+
+**LAN checklist:** same Wi‑Fi, Windows firewall allows TCP **5173** and **8000**, update `LAN_HOST` / CORS / `VITE_*` in `.env.lan` when your PC gets a new IPv4 address.
 
 ## Environment Variables
 
@@ -239,9 +265,9 @@ Do **not** auto-migrate in production — irrelevant for this project.
 
 ## Portfolio Demo Checklist
 
-1. `docker compose up --build`
-2. Open `http://localhost:5173`
-3. Two browser windows → create room → join with code → play full game **(blocked until M3 + M4)**
+1. `docker compose --env-file .env.local up --build` (solo) or `--env-file .env.lan` (Wi‑Fi play)
+2. Open the matching URL (`localhost:5173` or your LAN IP)
+3. Two browser windows → create room → join with code → play full game
 4. Optional: show match row in Postgres via `psql` **(blocked until M2.7)**
 
 **Available today:** GraphQL `health`, REST `/health`, 67 backend pytest against Redis.

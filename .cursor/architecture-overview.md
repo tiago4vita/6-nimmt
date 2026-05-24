@@ -37,44 +37,45 @@ flowchart TB
 
 ## Current Implementation Status
 
-**Last reviewed:** 2026-05-23
+**Last reviewed:** 2026-05-23 (aligned with `cursor/m4-frontend-core` + M6 UX)
 
 | Layer | Status | Notes |
 |---|---|---|
 | Domain (M1) | ✅ Complete | Pure rules + unit tests in `backend/app/domain/` |
-| Infrastructure (M2) | ✅ Complete | Redis orchestration; exposed via GraphQL resolvers |
+| Infrastructure (M2) | ✅ Complete | Redis orchestration; per-room turn timer; exposed via GraphQL resolvers |
 | GraphQL API (M3) | ✅ Complete | Queries, mutations, subscriptions in `backend/app/graphql/`; 11 GraphQL tests |
-| Frontend (M4) | 🟡 Scaffold | URQL client + read-only `guest-session.ts`; placeholder `App.vue` |
+| Frontend (M4) | ✅ Complete on branch | Router, composables, Home/Lobby/Game views on `cursor/m4-frontend-core` |
+| M6 UX polish | ✅ Largely complete | Sprints A–C shipped; a11y + SFX remain |
 | PostgreSQL | ⬜ Declared only | `DATABASE_URL` in config; no models, migrations, or runtime usage |
-| Playable MVP (M5) | ⬜ Blocked | Requires M4 frontend UI |
+| Playable MVP (M5) | 🔵 In progress | Manual two-browser QA + reconnect verification |
 
 **Runnable today:**
 
 - **Backend:** FastAPI + Strawberry at `/graphql` — guest sessions, room lifecycle, game mutations, and WS subscriptions; Redis lifespan + pub/sub listener in `main.py`.
-- **Frontend:** Vue 3 + Vite + Tailwind v4 + URQL client at `src/graphql/client.ts` (no operations called yet).
+- **Frontend:** Vue 3 SPA with URQL HTTP + graphql-ws — guest session bootstrap, lobby, live game UI, subscriptions (`frontend/src/`).
 - **Infrastructure:** `docker-compose.yml` with Postgres 16, Redis 7, backend, frontend.
-- **Tests:** `pytest` — 78 pass against real Redis (DB 15 in tests); no CI pipeline yet.
+- **Tests:** `pytest` — 82 pass against real Redis (DB 15 in tests); frontend `npm run build` passes; no CI pipeline yet.
 
-**Rough completeness toward a playable two-browser demo:** ~45–50%. Backend API is complete; frontend UI is the bottleneck.
+**Rough completeness toward a playable two-browser demo:** ~85%. Backend and frontend are wired; M5 is end-to-end verification.
 
 See [roadmap.md](./roadmap.md) for milestone checklist and [Known Gaps](#known-gaps--mvp-blockers) below.
 
 ## Known Gaps & MVP Blockers
 
-Remaining deferrals after M3. Track fixes in [roadmap.md](./roadmap.md) unless noted as M7 backlog.
+Remaining deferrals after M4. Track fixes in [roadmap.md](./roadmap.md) unless noted as M7 backlog.
 
 | Gap | Impact | Target fix |
 |---|---|---|
-| **No frontend UI** | Users cannot play in a browser | M4 — router, composables, views |
-| **`is_connected` vs domain `is_active`** | Adapter always sets `is_active=True`; disconnect only flips `is_connected`; all seated players block submit barrier until timeout | Document v1 behavior in M4 or reconcile later |
+| **Two-browser E2E not verified** | MVP demo unproven on branch | M5 — manual QA script |
+| **`is_connected` vs domain `is_active`** | Adapter always sets `is_active=True`; disconnect only flips `is_connected`; all seated players block submit barrier until timeout | Document v1 behavior; reconcile later |
 | **`version` bumped, never checked** | No optimistic concurrency on read-modify-write | Acceptable for single worker; Redis WATCH or version check in M7 |
 | **In-process locks & timers** | `asyncio.Lock`, timer tasks, `SubscriberRegistry` are process-local | Single uvicorn worker for MVP; M7 multi-worker hardening |
 | **`SESSION_SECRET` unused** | Tokens are UUID + opaque bearer + SHA-256 hash (Option A), not JWT | Keep for optional JWT (Option B) or remove when cleaning config |
-| **Frontend session read-only** | `guest-session.ts` reads localStorage; nothing calls `ensureGuestSession` | M4 `useGuestSession` composable |
 | **PostgreSQL unused** | No match history persistence | M2.7 / S8 — non-blocking for MVP demo |
+| **OpenAPI spec lag** | `openapi.yaml` missing rematch / turn-timer fields | GraphQL + `.cursor/graphql-schema.md` are authoritative |
 | **CI pipeline** | No automated test runs on push | M7 backlog |
 
-**Backend is API-complete for MVP.** A playable demo requires M4 (frontend wired to GraphQL).
+**Backend and frontend are wired for MVP.** M5 confirms the two-browser demo end-to-end.
 
 ## Data Flow (Live Play)
 
@@ -83,7 +84,7 @@ Remaining deferrals after M3. Track fixes in [roadmap.md](./roadmap.md) unless n
 3. Client subscribes to `myGameViewUpdated(roomId)` → receives **player-specific** view (hand visible, others hidden).
 4. All players `submitCard` during `SUBMIT` → server records submissions atomically in Redis.
 5. When all submissions received → domain engine resolves placement → Redis state updated → pub/sub pushes new views.
-6. On `FINISHED` → optional snapshot persisted to PostgreSQL (not implemented yet).
+6. On `FINISHED` → client shows `ResultsOverlay`; **Rematch** calls `returnToLobby` → `LOBBY` for another game. Optional PostgreSQL snapshot (not implemented yet).
 
 ### Information visibility
 

@@ -1,7 +1,20 @@
 import { createApp } from 'vue'
+import { createRouter, createWebHistory } from 'vue-router'
 import urql from '@urql/vue'
+
 import App from './App.vue'
 import { urqlClient } from './graphql/client'
+import { ensureGuestSessionGuard, routes } from './router'
 import './style.css'
 
-createApp(App).use(urql, urqlClient).mount('#app')
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+})
+
+router.beforeEach(async () => {
+  await ensureGuestSessionGuard()
+  return true
+})
+
+createApp(App).use(router).use(urql, urqlClient).mount('#app')

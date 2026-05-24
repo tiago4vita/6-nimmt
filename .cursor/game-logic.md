@@ -104,7 +104,7 @@ When |submissions| == |active_players|:
 
 - **Domain:** `PlayerState.is_active` — included in submission barrier via `active_player_ids`
 - **Infrastructure:** `PlayerInRoom.is_connected` — UI presence flag; `reconnect()` / `mark_disconnected()` (disconnect grace M3)
-- **As implemented (M2):** adapter maps all seated players to `is_active=True`; submit barrier waits for **all seated players** (not filtered by `is_connected`). Disconnected players who haven't submitted are auto-played on the 30s submit timeout
+- **As implemented (M2):** adapter maps all seated players to `is_active=True`; submit barrier waits for **all seated players** (not filtered by `is_connected`). Disconnected players who haven't submitted are auto-played when the room submit deadline elapses (`submitTimeoutSeconds`, 3–60)
 - **Left lobby:** player removed in LOBBY; mid-game leave sets `is_connected=false` but keeps seat
 
 ## Domain Module Structure
@@ -158,7 +158,7 @@ Complexity per round: **O(p log p + p)** where p = player count (≤ 10) — neg
 |---|---|
 | Player joins mid-game | **Rejected** — only join in LOBBY |
 | Player disconnects in LOBBY | Remove seat after TTL or on explicit leave |
-| Player disconnects in SUBMIT (no submission) | After **30s** timeout: auto-play **lowest card** in hand |
+| Player disconnects in SUBMIT (no submission) | After room **`submitTimeoutSeconds`** (3–60, default 30): auto-play **lowest card** in hand |
 | Player disconnects in SUBMIT (submitted) | Submission locked; counts toward barrier |
 | Host leaves in LOBBY | Transfer host to earliest joiner or disband room |
 | Invalid card submitted | Mutation error; no state change |

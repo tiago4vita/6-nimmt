@@ -59,18 +59,20 @@ Card faces stay readable on dark felt via **hue bands** (predictable by value) a
 
 ## Nielsen Heuristics Coverage
 
-| # | Heuristic | Where it shows up |
-|---|---|---|
-| 1 | Visibility of system status | `PhaseIndicator`, `SubmissionProgress`, connection dots, round counter, optional submit countdown |
-| 2 | Match real world | Vertical rows mirror a tabletop; large numbers; bones as dot/ring severity |
-| 3 | User control & freedom | Leave room with confirm; edit display name in lobby; copy code/link; SFX toggle |
-| 4 | Consistency & standards | Shared `AppShell`, one button variant set, `CardTile` reused in hand + board + resolve feed |
-| 5 | Error prevention | `Start game` disabled below 2 players; hand locks after submit; host-only actions |
-| 6 | Recognition over recall | Room code always visible; opponent submission shown as colored dots |
-| 7 | Flexibility & efficiency | Copy link/code; keyboard `1`–`N` selects nth card (nice-to-have) |
-| 8 | Aesthetic & minimalist | Dark chrome; vibrant color reserved for play surfaces; max two HUD font sizes |
-| 9 | Error recovery | Reconnect banner with auto-retry; mutation toasts surface `GameError.message` |
-| 10 | Help & documentation | Collapsible "How to play" drawer on Home + Lobby with 3 bullets + Rule C note |
+Full gap analysis and implementation backlog: **[ux-audit.md](./ux-audit.md)**.
+
+| # | Heuristic | Target UI (M6) | M6 status |
+|---|---|---|---|
+| 1 | Visibility of system status | `GameHudBar` (Round · Phase · Timer · Room), `PlayerStrip` highlights, submit-pending overlay, `LoadingShell` | Shipped |
+| 2 | Match real world | Tabletop rows; icon-only SFX/Leave (`IconButton`); large card numbers | Shipped |
+| 3 | User control & freedom | Select → `CardConfirmBar`; auto-submit selection on timeout; leave confirm | Shipped |
+| 4 | Consistency & standards | `IconButton`, three button tiers (`.btn-primary/-secondary/-destructive`), unified errors | Shipped |
+| 5 | Error prevention | Toasts with “More details”; 10s client mutation timeout + retry; confirm disabled while submitting | Shipped |
+| 6 | Recognition over recall | Room code in HUD; player card highlights (no `N/M` counter); keyboard hint strip | Shipped |
+| 7 | Flexibility & efficiency | `Esc` leave/cancel, `Enter` confirm, `1`–`N` quick select via `useGameShortcuts` | Shipped |
+| 8 | Aesthetic & minimalist | Compact `GameHudBar`; icon-only chrome; no duplicate submitted-card banner | Shipped |
+| 9 | Error recovery | Plain-language copy + retry action; `ConnectionStatusBanner` (WS + slow mutations) | Shipped |
+| 10 | Help & documentation | Visual `RulesDrawer` with `CardTile` / mini `GameRow` examples | Shipped |
 
 ```mermaid
 flowchart TB
@@ -84,7 +86,7 @@ flowchart TB
 
   subgraph ui [UI surfaces]
     PhaseIndicator
-    SubmissionProgress
+    SubmitCountdown
     ReconnectBanner
     CardTile
     GameBoard
@@ -94,7 +96,8 @@ flowchart TB
   end
 
   H1 --> PhaseIndicator
-  H1 --> SubmissionProgress
+  H1 --> SubmitCountdown
+  H1 --> PlayerStrip
   H1 --> ReconnectBanner
   H2 --> CardTile
   H2 --> GameBoard
@@ -111,7 +114,7 @@ Zero-friction entry: create or join a room without an account.
 
 ```
 ┌─────────────────────────────────────┐
-│  6 Nimmt          [SFX toggle off]  │
+│  6 Nimmt          [🔊]              │
 │                                     │
 │     ┌─────────────────────────┐     │
 │     │  Your name              │     │
@@ -139,19 +142,21 @@ Social waiting room; host starts the game.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ ← Leave    Room AB12CD    [Copy link]  [Copy code]         │
+│ [←]        Room AB12CD    [Copy link]  [Copy code]         │
 ├──────────────────────────────┬─────────────────────────────┤
 │  Players (4/10)              │  Waiting for host…          │
 │  ● Alice  (host)             │                             │
-│  ● You                       │  Min 2 players to start     │
-│  ○ Bob    (away)             │                             │
-│  [ Edit name ]               │  [ Start game ] (host only) │
+│  ● You                       │  Turn timer  [====●===] 30s │
+│  ○ Bob    (away)             │  (host slider: 3–60s)       │
+│  [ Edit name ]               │  Min 2 players to start     │
+│                              │  [ Start game ] (host only) │
 │                              │  or "Host will start…"      │
 └──────────────────────────────┴─────────────────────────────┘
 ```
 
 - **Layout:** two-column on `lg+`, single column fallback.
 - **Reactive:** `myGameViewUpdated` drives player list, `isConnected` dots, host badge; phase auto-navigates to `/play` once `phase >= SUBMIT`.
+- **Turn timer:** Host adjusts `submitTimeoutSeconds` (3–60, default 30) via range slider; synced to all lobby clients via subscription. Guests see read-only “Turn timer: Ns per round”.
 - **Micro-delights:** Copy code swaps the icon to Lucide `Check` + toast "Copied"; new player joins slide into the list (150ms); host's `Start game` button gains an amber pulse once at least 2 players are connected.
 
 ### 3. GameView — `/room/:roomId/play`
@@ -160,9 +165,9 @@ The core experience. Desktop-first vertical board.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ Round 3/8   SUBMIT   3/4 submitted   [SFX]   [Leave]       │
+│ Round 3/8 · SUBMIT · 0:24 left · AB12CD        [🔊]  [←]   │
 ├────────────────────────────────────────────────────────────┤
-│  PlayerStrip: names · bones totals · submit dots         │
+│  PlayerStrip: names · bones · submit highlight on cards  │
 ├────────────────────────────────────────────────────────────┤
 │        ┌─ felt surface ──────────────────────────┐         │
 │  Row 1 │ [12][19][24][31][38]                    │         │
@@ -172,11 +177,12 @@ The core experience. Desktop-first vertical board.
 │        └─────────────────────────────────────────┘         │
 ├────────────────────────────────────────────────────────────┤
 │  Your hand (sorted ascending)                              │
-│  [23] [47] [62] [88] [91] [97]   ← hover lift, click play  │
+│  [23] [47] [62] [88] [91] [97]   ← click select, then confirm │
+│  [ Play card 47 ]  [ Cancel ]                              │
 └────────────────────────────────────────────────────────────┘
 ```
 
-- **Interaction model:** Single-click submit. Selected card lifts and gains an amber ring; the rest of the hand dims and locks while the mutation resolves (optimistic — see [frontend-patterns.md](./frontend-patterns.md#optimistic-submit-flow)).
+- **Interaction model:** **Select → confirm.** Click selects (amber ring); confirm bar shows preview + “Play card N”. Hand locks while the mutation resolves (optimistic — see [frontend-patterns.md](./frontend-patterns.md#optimistic-submit-flow)). If the submit deadline hits with a card selected, the client submits it; otherwise the backend auto-plays the lowest card.
 - **Rule C copy:** When the played card is lower than all row tails, surface a toast in the resolve feed: *"Card too low — auto-collected row with fewest bones."*
 - **Transient phases (`DEAL`, `RESOLVE`, `SCORE`):** `GamePhaseOverlay` shows a shimmer + phase label to prevent interaction flash.
 
@@ -184,12 +190,13 @@ Reactive elements driven by the subscription payload:
 
 | Signal | UI response |
 |---|---|
-| `phase === SUBMIT` | Enable hand; show countdown if backend exposes a deadline (else client estimate from `updatedAt`) |
-| `mySubmittedCard` set | Lock hand; show face-up mini tile near player strip |
-| `submissionProgress` | Bar + numeric; pulse on increment |
+| `phase === SUBMIT` | Enable hand; show `SubmitCountdown` from `room.submitDeadline` |
+| `mySubmittedCard` set | Lock hand; highlight your player card in `PlayerStrip` (green border + check) |
+| Opponent `hasSubmitted` | Highlight player card in `PlayerStrip` (green border); no card value leaked |
+| Submit mutation pending | “Submitting…” on selected card; confirm disabled |
+| Submit deadline (self) | Brief overlay: auto-play message before resolve |
 | `lastResolvedPlays` | `ResolveFeed` staggers card → row arrow → bones badge (120ms/card) |
 | Row affected | `GameRow` highlight: amber wash fade (200ms) |
-| Opponent `hasSubmitted` | Dot turns green; no card value leaked |
 
 ### 4. Results Overlay — phase `FINISHED`
 
@@ -197,18 +204,21 @@ Primary end-game UX is an overlay on `GameView` (backdrop-blur, dimmed board). `
 
 ```
 ┌─────────────────────────────────────┐
-│           Game over                 │
+│  🏆 Final scores / Shared victory     │
+│  Tie at 4 bones — Alice & Bob         │
 │                                     │
-│   🏆 Alice — 23 pts                 │
-│      Bob   — 31 pts                 │
-│      You   — 45 pts                 │
+│  #1 🏆 Alice — 4 bones              │
+│  #1 🏆 Bob   — 4 bones              │
+│      You   — 12 bones               │
 │                                     │
-│  [ Back to lobby ]  [ Leave room ]  │
+│  [ Rematch ]  [ Exit room ]         │
 └─────────────────────────────────────┘
 ```
 
-- **Micro-delights:** Winner row carries a subtle gold left border; score numbers count up (400ms). No confetti — stays in the minimalist register.
-- **Ties:** Shared first place — both rows get the gold border and trophy icon.
+- **Primary action:** **Rematch** (accent) — calls `returnToLobby`, navigates to lobby for a new game.
+- **Secondary action:** **Exit room** (neutral) — `leaveRoom` + home.
+- **Micro-delights:** Winner row carries a subtle gold left border; tied winners share rank `#1`. No confetti — stays in the minimalist register.
+- **Ties:** Title becomes “Shared victory”; both winner rows get gold left border + per-row trophy icon; ranks use competition ranking (1, 1, 3…).
 
 ## Motion Catalog
 
@@ -217,7 +227,8 @@ Primary end-game UX is an overlay on `GameView` (backdrop-blur, dimmed board). `
 | Card hover | `translateY(-4px)` + soft shadow | 150ms | Opacity change only |
 | Card select | Amber ring scale-in | 120ms | Border color swap |
 | Submit lock | Hand fades to `opacity: 0.5`; selected stays at 1 | 200ms | Instant state swap |
-| Progress tick | Bar segment pulse on increment | 300ms | Static update |
+| Player submitted | Player card border flash (green) | 300ms | Static border |
+| Countdown urgent | Timer color shift (amber → red) | 300ms | Static color |
 | Resolve reveal | Stagger fade + slide per `ResolvedPlay` | 120ms × n | All at once |
 | Row highlight | Background amber wash 10% → 0% | 200ms | 2px border flash |
 | Copy code | Icon swap to `Check` | 200ms | Toast only |
@@ -247,7 +258,7 @@ Assets live in `frontend/public/sfx/`. Triggered via the Web Audio API for minim
 - Reconnect banner uses `role="status"` + `aria-live="polite"`.
 - Color is never the only signal — connection state pairs the dot color with text/title; penalties surface a number, not just red.
 - Contrast: card numbers must hit WCAG AA against their gradient face (verify each hue band manually during implementation).
-- Keyboard: `Tab` cycles the hand; number keys `1`–`N` select the nth visible card; `Enter` or `Space` submits the selected card.
+- Keyboard: `Tab` cycles the hand; `1`–`N` selects the nth visible card; `Enter` confirms the selected card; `Esc` clears selection or opens leave confirm; `Esc`/`Enter` on dialogs cancel/confirm.
 - Focus rings are visible on dark surfaces — use the amber accent at 60% opacity.
 
 ## Component Tree Additions
@@ -259,25 +270,37 @@ components/
   layout/
     AppShell.vue
     MobileDesktopNotice.vue
-    SfxToggle.vue
+    SfxToggle.vue           # Icon-only; aria-label for on/off
+    IconButton.vue          # Shared icon-only control + tooltip
+    LoadingShell.vue        # Skeleton for Home / Lobby / Game boot
   lobby/
     RoomHeader.vue
     PlayerList.vue
     CopyRoomActions.vue
-    RulesDrawer.vue
+    RulesDrawer.vue         # Visual rules with CardTile + mini rows
   game/
-    ResolveFeed.vue        # Staggers lastResolvedPlays
-    SubmitCountdown.vue    # Activated if backend exposes a deadline
-    GamePhaseOverlay.vue   # DEAL / RESOLVE / SCORE shimmer
-    ResultsOverlay.vue     # FINISHED modal
+    ResolveFeed.vue         # Staggers lastResolvedPlays
+    SubmitCountdown.vue     # Driven by room.submitDeadline
+    GamePhaseOverlay.vue    # DEAL / RESOLVE / SCORE / timeout auto-play
+    ResultsOverlay.vue      # FINISHED modal
   feedback/
-    ReconnectBanner.vue
-    ToastHost.vue
+    ReconnectBanner.vue     # Evolve to ConnectionStatusBanner (WS + mutations)
+    ToastHost.vue           # Expandable “More details” + optional retry action
     ConfirmDialog.vue
 ```
 
+### Button tiers
+
+| Tier | Use | Style |
+|---|---|---|
+| Primary | Create room, Start game, Play card | Amber fill |
+| Secondary | Join room, Cancel, Copy | Border |
+| Destructive | Confirm leave (dialog only) | Red fill |
+| Icon | SFX, Leave, dismiss | Ghost + tooltip + `aria-label` |
+
 ## Cross-References
 
+- Nielsen heuristic backlog: [ux-audit.md](./ux-audit.md)
 - Vue conventions and composables: [frontend-patterns.md](./frontend-patterns.md)
 - Tooling and dependencies: [frontend-stack.md](./frontend-stack.md)
 - GraphQL types behind the reactive UI: [graphql-schema.md](./graphql-schema.md)

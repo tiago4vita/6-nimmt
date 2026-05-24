@@ -1,1 +1,123 @@
 @import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/600.css";
+
+:root {
+  --color-surface: #0c0c0f;
+  --color-surface-raised: #16161a;
+  --color-felt: #1a2e1a;
+  --color-border: #2a2a32;
+  --color-text: #f4f4f5;
+  --color-muted: #a1a1aa;
+  --color-accent: #d4a017;
+  --color-danger: #ef4444;
+  --color-success: #22c55e;
+}
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-felt: var(--color-felt);
+  --color-border: var(--color-border);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-accent: var(--color-accent);
+  --color-danger: var(--color-danger);
+  --color-success: var(--color-success);
+}
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes resolve-feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.resolve-feed-item {
+  animation: resolve-feed-in 0.35s ease-out both;
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    border-radius: 0.375rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    outline: none;
+    transition: opacity 150ms, background-color 150ms, color 150ms,
+      border-color 150ms;
+  }
+
+  .btn:focus-visible {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 60%, transparent);
+  }
+
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  .btn-primary {
+    background: var(--color-accent);
+    color: var(--color-surface);
+    font-weight: 600;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  .btn-secondary {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+  }
+
+  .btn-destructive {
+    background: var(--color-danger);
+    color: #ffffff;
+    font-weight: 500;
+  }
+
+  .btn-destructive:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+}

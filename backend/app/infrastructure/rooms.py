@@ -14,13 +14,20 @@ from app.infrastructure import redis as redis_keys
 from app.infrastructure.errors import (
     GameAlreadyStartedError,
     InvalidDisplayNameError,
+    InvalidPhaseError,
+    InvalidSubmitTimeoutError,
     NotSeatedError,
+    NotHostError,
     RoomCodeCollisionError,
     RoomFullError,
     RoomNotFoundError,
 )
 from app.infrastructure.locks import drop_room_lock, room_lock
 from app.infrastructure.models import GameRoomState, PlayerInRoom
+
+SUBMIT_TIMEOUT_MIN = 3
+SUBMIT_TIMEOUT_MAX = 60
+SUBMIT_TIMEOUT_DEFAULT = 30
 
 CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
 CODE_LENGTH = 6
@@ -34,6 +41,14 @@ def _now() -> datetime:
 
 def _room_ttl_seconds() -> int:
     return settings.room_ttl_hours * 60 * 60
+
+
+def validate_submit_timeout(seconds: int) -> int:
+    if seconds < SUBMIT_TIMEOUT_MIN or seconds > SUBMIT_TIMEOUT_MAX:
+        raise InvalidSubmitTimeoutError(
+            f"Submit timeout must be between {SUBMIT_TIMEOUT_MIN} and {SUBMIT_TIMEOUT_MAX} seconds"
+        )
+    return seconds
 
 
 def validate_display_name(name: str) -> str:
@@ -223,6 +238,60 @@ async def join_room(
 
     await _publish_room(fresh)
     return fresh
+
+
+async def update_seated_display_name(
+    *,
+    guest_id: str,
+    display_name: str,
+    client: Redis | None = None,
+) -> GameRoomState | None:
+    """Update the seated player's display name in their current room, if any."""
+    cleaned = validate_display_name(display_name)
+    redis = client or redis_keys.get_client()
+    room_id = await redis.get(redis_keys.guest_current_room_key(guest_id))
+    if room_id is None:
+        return None
+
+    async with room_lock(room_id):
+        room = await load_room(room_id, client=client)
+        if room is None:
+            return None
+        player = room.player_by_guest_id(guest_id)
+        if player is None:
+            return None
+        player.display_name = cleaned
+        await save_room(room, client=client)
+
+    await _publish_room(room)
+    return room
+
+
+async def update_submit_timeout(
+    *,
+    room_id: str,
+    guest_id: str,
+    submit_timeout_seconds: int,
+    client: Redis | None = None,
+) -> GameRoomState:
+    timeout = validate_submit_timeout(submit_timeout_seconds)
+
+    async with room_lock(room_id):
+        room = await load_room(room_id, client=client)
+        if room is None:
+            raise RoomNotFoundError(f"Room {room_id} not found")
+        if room.phase != GamePhase.LOBBY:
+            raise InvalidPhaseError("Submit timeout can only be changed in the lobby")
+
+        host_player = room.player_by_id(room.host_player_id)
+        if host_player is None or host_player.guest_id != guest_id:
+            raise NotHostError("Only the host can change the submit timeout")
+
+        room.submit_timeout_seconds = timeout
+        await save_room(room, client=client)
+
+    await _publish_room(room)
+    return room
 
 
 async def leave_room(

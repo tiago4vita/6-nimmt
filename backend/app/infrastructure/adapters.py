@@ -66,6 +66,8 @@ def apply_game_state(room: GameRoomState, state: GameState) -> GameRoomState:
     room.winner_ids = list(state.winner_ids) if state.winner_ids is not None else None
     if state.last_resolution is not None:
         room.last_resolution = [_resolved_play_to_dto(play) for play in state.last_resolution]
+    else:
+        room.last_resolution = None
 
     state_by_id = {player.id: player for player in state.players}
     for player in room.players:

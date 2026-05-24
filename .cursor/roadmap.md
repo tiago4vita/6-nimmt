@@ -2,7 +2,7 @@
 
 Task tracker for moving from **dev scaffold → playable MVP → portfolio polish**. Architecture and rules live in the other `.cursor/` docs — this file is the execution order.
 
-**Last reviewed:** 2026-05-23 (verified against `main` after M3 merge)
+**Last reviewed:** 2026-05-23 (verified against `cursor/m4-frontend-core` + M6 UX / post-game / lobby settings)
 
 ---
 
@@ -10,40 +10,42 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 
 | Area | Status | Notes |
 |---|---|---|
-| Documentation | ✅ Complete | `.cursor/` aligned with M3; OpenAPI reference (`backend/openapi.yaml`) |
+| Documentation | ✅ Complete | `.cursor/` aligned with shipped branch behavior |
 | Docker Compose | ✅ Complete | Postgres 16, Redis 7, backend, frontend |
 | Domain game engine (M1) | ✅ Complete | `backend/app/domain/` — pure rules, `bones` nomenclature; **31 domain tests** |
-| Infrastructure layer (M2) | ✅ Complete | Redis sessions, rooms, game loop, pub/sub, timers (`0bbad3e` on `main`) |
-| GraphQL API (M3) | ✅ Complete | `backend/app/graphql/` — queries, mutations, subscriptions, view builders; **11 GraphQL tests** |
-| Backend tests | ✅ Complete | **78 pytest pass** (31 domain + 36 infra/openapi + 11 GraphQL) against real Redis (DB 15) |
+| Infrastructure layer (M2) | ✅ Complete | Redis sessions, rooms, game loop, pub/sub, timers |
+| GraphQL API (M3) | ✅ Complete | Queries, mutations, subscriptions, view builders; **11 GraphQL tests** |
+| Backend tests | ✅ Complete | **82 pytest pass** against real Redis (DB 15) |
 | Backend entry | ✅ Complete | `main.py` — Redis lifespan, pub/sub listener, full Strawberry schema + WS auth context |
 | OpenAPI reference | ✅ Complete | REST health + documented GraphQL contract at `/docs`, `/openapi.yaml` |
 | PostgreSQL persistence | ⬜ Not started | `DATABASE_URL` in config; SQLModel/Alembic declared but unused at runtime |
-| Frontend scaffold | 🟡 Partial | URQL client + `guest-session.ts` (read-only); placeholder `App.vue`; `vue-router` in deps but not wired |
-| Frontend build | 🟡 Scaffold only | `npm run build` passes; no game UI yet |
-| Frontend screens (M4) | ⬜ Not started | No `router/`, composables, views, or game components |
-| E2E playable demo (M5) | ⬜ Not started | Blocked on M4 (backend API ready) |
+| Frontend core (M4) | ✅ Complete on branch | Router, composables, Home/Lobby/Game views, GraphQL operations, dark theme |
+| Frontend build | ✅ Complete | `npm run build` passes with game UI |
+| M6 UX (Sprints A–C) | ✅ Largely complete | Select→confirm, countdown, HUD, shortcuts, loading shells, toasts, rules drawer |
+| Post-game & rematch | ✅ Complete | Tie-aware `ResultsOverlay`; `returnToLobby` + Rematch / Exit room actions |
+| Lobby turn timer | ✅ Complete | Host sets `submitTimeoutSeconds` (3–60s, default 30) before start |
+| E2E playable demo (M5) | 🔵 In progress | Manual two-browser QA + reconnect verification |
 
-**Git:** `main` — M3 merged. Untracked noise only: root `package-lock.json`, `frontend/vite.config.js`.
+**Git:** `cursor/m4-frontend-core` — M4 frontend + M6 UX polish + rematch + configurable turn timer.
 
-**Recent commits:** … → M2 infrastructure → M3 GraphQL API (`41883b1`) → docs aligned with M3.
+**Recent work (branch):** UX audit Sprints A–C; `submitDeadline` exposure; tie-aware results; `returnToLobby` / `updateSubmitTimeout` mutations; display-name persistence; HUD last-resolve row.
 
-**Next up:** **M4 Frontend Core** — `useGuestSession`, router, Home/Lobby/Game views wired to GraphQL.
+**Next up:** **M5 Playable MVP** — manual two-browser QA, reconnect verification, merge to `main`.
 
-### Remaining gaps (post-M3)
+### Remaining gaps (post-M4)
 
 | Item | Status | Action |
 |---|---|---|
-| Frontend UI | Not started | M4 — entire client-facing layer |
-| `useGuestSession` / session mint | Client reads localStorage only | M4 — call `ensureGuestSession`, persist `{ guestId, sessionToken, expiresAt }` |
-| `is_connected` vs domain `is_active` | Adapter maps `is_active=True`; disconnect only flips `is_connected` | Document v1 behavior in M4 or reconcile later |
+| Two-browser E2E demo | Not verified on branch | M5 — manual QA script |
+| `is_connected` vs domain `is_active` | Adapter maps `is_active=True`; disconnect only flips `is_connected` | Document v1 behavior; reconcile later |
 | `version` optimistic locking | Bumped on save; never checked on read-modify-write | OK for single worker; M7 for multi-worker |
 | In-process locks/timers/registry | Process-local only | Single uvicorn worker for MVP |
 | `SESSION_SECRET` / Postgres deps | Declared in config/pyproject; unused at runtime | M2.7 or config cleanup |
 | CI pipeline | None | M7 backlog |
+| OpenAPI spec lag | `openapi.yaml` missing `returnToLobby`, `updateSubmitTimeout`, `submitTimeoutSeconds` | Sync when convenient — GraphQL schema is source of truth |
 | pytest-asyncio loop scope | Deprecation warning — set `asyncio_default_fixture_loop_scope` in pyproject | Dev hygiene |
 
-**Completeness note:** ~45–50% toward a playable two-browser demo. Backend API complete; frontend UI is the bottleneck.
+**Completeness note:** ~85% toward a playable two-browser demo. Backend API and frontend UI are wired; M5 is verification + merge.
 
 ---
 
@@ -54,7 +56,7 @@ flowchart LR
   M0[M0 Scaffold ✅] --> M1[M1 Domain ✅]
   M1 --> M2[M2 Infrastructure ✅]
   M2 --> M3[M3 GraphQL API ✅]
-  M3 --> M4[M4 Frontend Core]
+  M3 --> M4[M4 Frontend Core ✅]
   M4 --> M5[M5 Playable MVP]
   M5 --> M6[M6 Polish]
   M6 --> M7[M7 Post-MVP]
@@ -66,9 +68,9 @@ flowchart LR
 | **M1** Domain engine | Pure rules + unit tests | ✅ Done |
 | **M2** Infrastructure | Redis + auth + room state | ✅ Done |
 | **M3** GraphQL API | Queries, mutations, subscriptions | ✅ Done |
-| **M4** Frontend core | Router, session, lobby, game UI | ⬜ **Current focus** |
-| **M5** Playable MVP | Two browsers, full game loop | ⬜ Not started |
-| **M6** Polish | Design fidelity, motion, a11y, SFX | ⬜ Not started |
+| **M4** Frontend core | Router, session, lobby, game UI | ✅ Done on branch |
+| **M5** Playable MVP | Two browsers, full game loop | 🔵 **Current focus** |
+| **M6** Polish | Design fidelity, motion, a11y, SFX | 🔵 **Most UX done** — a11y audit + SFX remain |
 | **M7** Post-MVP | Match history, stats, prod profile | ⬜ Backlog |
 
 ---
@@ -156,7 +158,7 @@ Reference: [state-management.md](./state-management.md), [auth.md](./auth.md), [
 - [x] `start_game` — shuffle, deal, seed rows, transition LOBBY → SUBMIT
 - [x] `submit_card` — validate phase/hand; per-room asyncio lock
 - [x] When all submitted → call `resolve_turn` → update state → publish
-- [x] Submission timeout (30s): auto-play lowest card for missing submissions
+- [x] Submission timeout: per-room `submitTimeoutSeconds` (3–60s, default 30); host sets in lobby; auto-play lowest card for missing submissions on deadline
 - [x] Reconnect helpers: `reconnect()` / `mark_disconnected()` in infrastructure
 - [x] Disconnect grace wired to WebSocket lifecycle (`schedule_disconnect` on subscription teardown)
 - [x] Monotonic `version` field on room state (bumped on every save; optimistic check deferred to M7)
@@ -206,6 +208,8 @@ Implemented in `backend/app/graphql/` — `schema.py`, `types.py`, `views.py`, `
 ### 3.3 Mutations
 
 - [x] `createRoom`, `joinRoom`, `leaveRoom`, `startGame`, `submitCard`, `updateDisplayName`
+- [x] `returnToLobby` — reset `FINISHED` room to `LOBBY` for rematch (any seated player)
+- [x] `updateSubmitTimeout` — host-only, `LOBBY` only; 3–60 seconds per round
 - [x] Typed error payloads (`success: false` + `GameErrorCode`); no exceptions for rule violations
 - [x] Return refreshed `view` on success
 
@@ -236,47 +240,50 @@ Implemented in `backend/app/graphql/` — `schema.py`, `types.py`, `views.py`, `
 
 ---
 
-## M4 — Frontend Core
+## M4 — Frontend Core ✅
 
 Reference: [frontend-patterns.md](./frontend-patterns.md), [frontend-design.md](./frontend-design.md), [frontend-stack.md](./frontend-stack.md).
 
+Implemented on `cursor/m4-frontend-core` (`00be70c` + handoff fixes).
+
 ### 4.1 Tooling & plumbing
 
-- [ ] Vue Router — `vue-router` is a dependency but unused; add `router/index.ts` with routes: `/`, `/room/:roomId/lobby`, `/room/:roomId/play`, `/room/:roomId/results`
-- [ ] `@fontsource/inter` + dark theme CSS variables from frontend-design.md
-- [ ] `lucide-vue-next` icons
-- [ ] GraphQL operations files (`session`, `room`, `game`) — optional codegen
-- [x] URQL client reads `6nimmt_guest` localStorage key (`src/lib/guest-session.ts`)
+- [x] Vue Router — `router/index.ts` with routes: `/`, `/room/:roomId/lobby`, `/room/:roomId/play`, `/room/:roomId/results`
+- [x] `@fontsource/inter` + dark theme CSS variables from frontend-design.md
+- [x] `lucide-vue-next` icons
+- [x] GraphQL operations in `src/graphql/operations.ts` (hand-written; codegen deferred)
+- [x] URQL client reads/writes `6nimmt_guest` localStorage key (`src/lib/guest-session.ts`)
 
 ### 4.2 Composables
 
-- [ ] `useGuestSession` — boot `ensureGuestSession`, persist session, attach auth headers
-- [ ] `useGameRoom(roomId)` — `myGameViewUpdated` subscription as source of truth
-- [ ] `useCardSelection` — select + submit with optimistic lock
+- [x] `useGuestSession` — boot `ensureGuestSession`, persist session, attach auth headers
+- [x] `useGameRoom(roomId)` — `myGameViewUpdated` subscription as source of truth
+- [x] `useCardSelection` — select + submit with optimistic lock
 
 ### 4.3 Layout & feedback
 
-- [ ] `AppShell.vue`, `MobileDesktopNotice.vue`, `SfxToggle.vue`
-- [ ] `ToastHost.vue`, `ReconnectBanner.vue`, `ConfirmDialog.vue`
-- [ ] `RulesDrawer.vue` — collapsible "How to play" + Rule C note
+- [x] `AppShell.vue`, `MobileDesktopNotice.vue`, `SfxToggle.vue`
+- [x] `ToastHost.vue`, `ReconnectBanner.vue`, `ConfirmDialog.vue`
+- [x] `RulesDrawer.vue` — collapsible "How to play" + Rule C note
 
 ### 4.4 Home & lobby
 
-- [ ] `HomeView` — name field, create room, 6-char code input with auto-advance
-- [ ] `LobbyView` — player list, host badge, copy code/link, start game (host, ≥2 players)
-- [ ] Phase-driven navigation: LOBBY → lobby route; SUBMIT+ → play route
+- [x] `HomeView` — name field, create room, 6-char code input with auto-advance
+- [x] `LobbyView` — player list, host badge, copy code/link, **turn-timer slider (host)**, start game (host, ≥2 players)
+- [x] Phase-driven navigation: LOBBY → lobby route; SUBMIT+ → play route
+- [x] Lobby rename updates seated player in room (`update_seated_display_name` + mutation view)
 
 ### 4.5 Game shell (minimal first)
 
-- [ ] `GameView` — subscribe to `myGameViewUpdated`
-- [ ] `PhaseIndicator`, `SubmissionProgress`, `PlayerStrip`
-- [ ] `GameBoard` + `GameRow` + `CardTile` (hue bands + bone indicators)
-- [ ] `CardHand` — single-click submit, optimistic lock
-- [ ] `GamePhaseOverlay` for DEAL / RESOLVE / SCORE
-- [ ] `ResolveFeed` — stagger `lastResolvedPlays`
-- [ ] `ResultsOverlay` on FINISHED
+- [x] `GameView` — subscribe to `myGameViewUpdated`
+- [x] `PhaseIndicator`, `SubmissionProgress`, `PlayerStrip`
+- [x] `GameBoard` + `GameRow` + `CardTile` (hue bands + bone indicators)
+- [x] `CardHand` — single-click submit, optimistic lock, submitted card pinned separately
+- [x] `GamePhaseOverlay` for DEAL / RESOLVE / SCORE
+- [x] `ResolveFeed` — stagger `lastResolvedPlays`
+- [x] `ResultsOverlay` on FINISHED — tie-aware ranks, **Rematch** (primary) + **Exit room** (secondary)
 
-**M4 done when:** UI renders live state from backend subscriptions; host can start and players can submit cards.
+**M4 done when:** UI renders live state from backend subscriptions; host can start and players can submit cards — **met** on branch. Handoff: WS reconnect tracking + manual M5 QA remain.
 
 ---
 
@@ -290,9 +297,9 @@ Portfolio demo checklist from [deployment.md](./deployment.md):
 - [ ] Disconnect/reconnect preserves seat and submission
 - [ ] Rule C auto-pick surfaced in UI toast
 - [ ] No hidden-card leaks in browser (manual check during M5; automated on backend)
-- [x] Backend tests pass (`pytest` — 78 tests)
+- [x] Backend tests pass (`pytest` — 82 tests)
 - [x] Backend card-leak audit automated (`test_no_hand_leakage_in_public_room`)
-- [x] Frontend scaffold builds (`npm run build` — no game UI yet)
+- [x] Frontend build passes (`npm run build`)
 
 **M5 done when:** A complete 2-player game finishes with correct scores and results overlay.
 
@@ -300,33 +307,50 @@ Portfolio demo checklist from [deployment.md](./deployment.md):
 
 ## M6 — Polish & Showcase Quality
 
-Reference: [frontend-design.md](./frontend-design.md) motion catalog and accessibility checklist.
+Reference: [frontend-design.md](./frontend-design.md), **[ux-audit.md](./ux-audit.md)** (Nielsen heuristic backlog).
 
 ### 6.1 Visual fidelity
 
-- [ ] Dark theme tokens applied consistently (not placeholder neutral-50 home page)
-- [ ] Card gradients per value band; bone dot/ring indicators
-- [ ] Felt surface behind board; amber accent on CTAs
+- [x] Dark theme tokens applied consistently
+- [x] Card gradients per value band; bone dot/ring indicators
+- [x] Felt surface behind board; amber accent on CTAs
 
 ### 6.2 Motion & feedback
 
-- [ ] Hover lift, submit lock fade, progress pulse, resolve stagger, row highlight
-- [ ] `prefers-reduced-motion` fallbacks for all animations
-- [ ] Score count-up on results; winner gold border
+- [x] Hover lift, submit lock fade, player-strip submit highlight, row highlight
+- [x] `prefers-reduced-motion` fallbacks for core animations
+- [ ] Score count-up on results (400ms planned; static today)
+- [x] Winner / tie gold border + trophy on results rows
 
-### 6.3 Accessibility
+### 6.3 UX heuristics (Sprint A — see ux-audit.md)
 
+- [x] Expose `submitDeadline` in GraphQL + `SubmitCountdown.vue`
+- [x] Select → confirm card flow; auto-submit selection on deadline
+- [x] Submit-pending indicator + mutation timeout/retry toasts
+- [x] `PlayerStrip` submission highlights; remove `SubmissionProgress` bar
+- [x] Error toasts with expandable “More details”
+
+### 6.4 UX heuristics (Sprint B)
+
+- [x] Keyboard shortcuts (`Esc`, `Enter`, `1`–`N`) via `useGameShortcuts`
+- [x] Icon-only SFX + Leave (`IconButton.vue`)
+- [x] `LoadingShell.vue` for Home / Lobby / Game boot
+- [x] Timeout auto-play feedback overlay for affected player
+- [x] Visual `RulesDrawer` with `CardTile` examples
+
+### 6.5 Accessibility
+
+- [x] Keyboard: Tab + number keys + Enter confirm + Esc cancel/leave
 - [ ] `aria-pressed` / `aria-disabled` on cards
-- [ ] Toast `role="status"` / `role="alert"`
-- [ ] Keyboard: Tab + number keys + Enter/Space submit
-- [ ] WCAG AA contrast on card faces
+- [ ] Toast `role="status"` / `role="alert"` (partial — `ConnectionStatusBanner` uses `role="status"`)
+- [ ] WCAG AA contrast audit on card faces
 
-### 6.4 Optional SFX
+### 6.6 Optional SFX
 
 - [ ] Web Audio API triggers; `sfxEnabled` in localStorage; muted by default
 - [ ] Assets in `frontend/public/sfx/`
 
-### 6.5 Developer experience
+### 6.7 Developer experience
 
 - [ ] README quick-start verified on clean machine
 - [ ] Match row visible in Postgres after game (`psql` spot-check)
@@ -360,17 +384,17 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 | **S2** | M2.1–2.4 | ✅ Done | Guest session + room create/join in Redis |
 | **S3** | M2.5–2.6 | ✅ Done | Full game loop in Redis + pub/sub |
 | **S4** | M3 | ✅ Done | GraphQL API + subscription demo in playground |
-| **S5** | M4.1–4.4 | 🔵 **In progress** | Home + lobby wired to API |
-| **S6** | M4.5 + M5 | ⬜ Pending | Game view + two-browser MVP |
-| **S7** | M6 | ⬜ Pending | Design polish pass |
+| **S5** | M4.1–4.5 | ✅ Done on branch | Router, session, Home/Lobby/Game wired to GraphQL |
+| **S6** | M5 QA + fixes | 🔵 **In progress** | Two-browser MVP verification |
+| **S7** | M6 remainder | 🔵 **In progress** | a11y audit, optional SFX, score count-up |
 | **S8** | M2.7 + M7 picks | ⬜ Pending | Postgres persistence + extras |
 
 **Immediate actions:**
 
-1. Add Vue Router — `/`, `/room/:roomId/lobby`, `/room/:roomId/play`, `/room/:roomId/results`.
-2. Implement `useGuestSession` — call `ensureGuestSession`, write `6nimmt_guest` to localStorage.
-3. Implement `useGameRoom(roomId)` — subscribe to `myGameViewUpdated` as source of truth.
-4. Build Home + Lobby views wired to GraphQL mutations.
+1. Run manual two-browser QA (create → join → play → FINISHED).
+2. Verify reconnect banner + refresh mid-game.
+3. Merge `cursor/m4-frontend-core` to `main` after QA passes.
+4. Check off M5 portfolio demo items.
 
 ---
 
@@ -380,8 +404,8 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 domain (M1) ✅
   └─► redis room orchestration (M2) ✅
         └─► graphql resolvers (M3) ✅
-              └─► frontend composables + views (M4) ← YOU ARE HERE
-                    └─► MVP demo (M5)
+              └─► frontend composables + views (M4) ✅
+                    └─► MVP demo (M5) ← YOU ARE HERE
                           └─► polish (M6)
 ```
 
@@ -415,5 +439,6 @@ domain (M1) ✅
 | Postgres tables | [database-schema.md](./database-schema.md) |
 | Local run & demo | [deployment.md](./deployment.md) |
 | UI screens & motion | [frontend-design.md](./frontend-design.md) |
+| UX heuristic backlog | [ux-audit.md](./ux-audit.md) |
 | Vue conventions | [frontend-patterns.md](./frontend-patterns.md) |
 | Doc index | [README.md](./README.md) |
