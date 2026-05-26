@@ -341,14 +341,14 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.1 — Scene shell & camera
+### 6.1 — Scene shell & camera *(complete)*
 
 **Deliverable:** Static white infinite table, tilted perspective, clean lighting — no cards yet.
 
-- [ ] `GameScene.vue` — TresCanvas, resize-safe aspect ratio inside `.crt-game`
-- [ ] `TableSurface.vue` — large off-white plane, soft shadow, slight gloss; feels “Wii white” not flat `#fff`
-- [ ] Camera rig — ~25–35° pitch, centered on row area; subtle ambient + directional light
-- [ ] `scene/constants.ts` — world units, card dimensions, table bounds (single source of truth)
+- [x] `GameScene.vue` — TresCanvas, resize-safe aspect ratio inside `.crt-game`
+- [x] `TableSurface.vue` — large off-white plane, soft shadow, slight gloss; feels “Wii white” not flat `#fff`
+- [x] Camera rig — ~25–35° pitch, centered on row area; subtle ambient + directional light
+- [x] `scene/constants.ts` — world units, card dimensions, table bounds (single source of truth)
 
 **Review checkpoint:** Empty table reads as a physical surface; no z-fighting; 60fps on laptop iGPU.
 
@@ -561,7 +561,7 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.1** — scene shell (empty table, camera, lights).
+1. **M6.2** — card mesh primitive (face + black back).
 2. Continue **6.2 → 6.12** in order; review between each slice.
 3. Optional parallel: merge branch to `main` once 6.3+ is stable.
 
