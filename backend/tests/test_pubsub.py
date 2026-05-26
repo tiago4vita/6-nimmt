@@ -13,7 +13,9 @@ pytestmark = pytest.mark.asyncio
 async def test_publish_dispatches_to_subscriber(redis_client: Redis) -> None:
     received: list[pubsub.StateUpdate] = []
 
-    async def callback(update: pubsub.StateUpdate) -> None:
+    async def callback(
+        update: pubsub.StateUpdate, _room: object | None
+    ) -> None:
         received.append(update)
 
     listener = pubsub.PubSubListener()

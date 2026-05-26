@@ -12,6 +12,7 @@ import type { MutationResult } from '@/graphql/types'
 import { useDisplayName } from '@/composables/useDisplayName'
 import { useGuestSession } from '@/composables/useGuestSession'
 import { useToast } from '@/composables/useToast'
+import { SHOWCASE_MAX_PLAYERS } from '@/lib/showcase'
 
 const router = useRouter()
 const route = useRoute()
@@ -49,7 +50,7 @@ async function handleMutationResult(
 
 async function createRoom(): Promise<void> {
   if (!canCreate.value) {
-    pushToast('Enter your name to create a room', 'error')
+    pushToast('Enter your name to create a duel', 'error')
     return
   }
 
@@ -60,6 +61,7 @@ async function createRoom(): Promise<void> {
   try {
     const result = await createRoomMutation.executeMutation({
       displayName: name,
+      maxPlayers: SHOWCASE_MAX_PLAYERS,
     })
     await handleMutationResult(result.data?.createRoom as MutationResult | undefined, (roomId) => {
       void router.push({ name: 'lobby', params: { roomId } })
@@ -117,7 +119,9 @@ function onCodeComplete(code: string): void {
     <div v-else class="mx-auto flex max-w-md flex-col gap-6">
       <div class="text-center">
         <h1 class="text-3xl font-semibold tracking-tight text-text">Play 6 Nimmt</h1>
-        <p class="mt-2 text-sm text-muted">Create a room or join with a code. No account needed.</p>
+        <p class="mt-2 text-sm text-muted">
+          Start a 1v1 duel or join with a code. No account needed.
+        </p>
       </div>
 
       <label class="block">
@@ -137,7 +141,7 @@ function onCodeComplete(code: string): void {
         :disabled="!canCreate"
         @click="createRoom"
       >
-        Create room
+        Create duel
       </button>
 
       <div class="flex items-center gap-3 text-xs uppercase tracking-wide text-muted">

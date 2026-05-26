@@ -94,18 +94,16 @@ async def test_submit_rejects_double_submission(redis_client: Redis) -> None:
 async def test_submission_barrier_does_not_resolve_until_all_submit(
     redis_client: Redis,
 ) -> None:
-    room = await _seat_players(3)
+    room = await _seat_players(2)
     started = await game.start_game(room_id=room.id, guest_id="g0")
 
     p0_card = started.players[0].hand[0].id
-    p1_card = started.players[1].hand[0].id
 
-    await game.submit_card(room_id=room.id, guest_id="g0", card_id=p0_card)
-    mid = await game.submit_card(room_id=room.id, guest_id="g1", card_id=p1_card)
+    mid = await game.submit_card(room_id=room.id, guest_id="g0", card_id=p0_card)
 
     assert mid.phase == GamePhase.SUBMIT
     assert mid.round_number == 1
-    pending = mid.player_by_guest_id("g2")
+    pending = mid.player_by_guest_id("g1")
     assert pending is not None
     assert pending.submission is None
     p0_after = mid.player_by_guest_id("g0")

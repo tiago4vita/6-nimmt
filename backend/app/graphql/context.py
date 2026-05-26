@@ -54,8 +54,7 @@ class GraphQLContext(BaseContext):
             self._guest_resolved = True
             return None
         try:
-            session = await sessions.validate_token(guest_id, token)
-            await sessions.touch_session(guest_id)
+            session = await sessions.validate_and_touch_session(guest_id, token)
             self._guest_context = GuestContext(
                 guest_id=session.guest_id, display_name=session.display_name
             )

@@ -99,6 +99,21 @@ async def validate_token(
     return session
 
 
+async def validate_and_touch_session(
+    guest_id: str,
+    token: str,
+    *,
+    client: Redis | None = None,
+) -> GuestSession:
+    """Validate credentials and refresh TTL in one read + one write."""
+    session = await validate_token(guest_id, token, client=client)
+    now = _now()
+    session.last_seen_at = now
+    session.expires_at = now + timedelta(days=settings.session_ttl_days)
+    await _save_session(session, client=client)
+    return session
+
+
 async def ensure_guest_session(
     *,
     existing_guest_id: str | None = None,
@@ -113,12 +128,14 @@ async def ensure_guest_session(
             and session.token_hash == _hash_token(existing_token)
             and session.expires_at >= _now()
         ):
-            refreshed = await touch_session(existing_guest_id, client=client)
-            assert refreshed is not None
+            now = _now()
+            session.last_seen_at = now
+            session.expires_at = now + timedelta(days=settings.session_ttl_days)
+            await _save_session(session, client=client)
             return GuestSessionResult(
-                guest_id=refreshed.guest_id,
+                guest_id=session.guest_id,
                 session_token=existing_token,
-                expires_at=refreshed.expires_at,
+                expires_at=session.expires_at,
             )
 
     session, token = await create_session(client=client)

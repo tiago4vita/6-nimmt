@@ -18,6 +18,7 @@ import { isPlayPhase } from '@/graphql/types'
 import { useDisplayName } from '@/composables/useDisplayName'
 import { useGameRoom } from '@/composables/useGameRoom'
 import { useToast } from '@/composables/useToast'
+import { SHOWCASE_MAX_PLAYERS } from '@/lib/showcase'
 
 const props = defineProps<{
   roomId: string
@@ -53,7 +54,14 @@ const updateNameMutation = useMutation(UPDATE_DISPLAY_NAME)
 
 const me = computed(() => players.value.find((player) => player.id === myPlayerId.value) ?? null)
 const isHost = computed(() => me.value?.isHost ?? false)
-const canStart = computed(() => isHost.value && players.value.length >= 2 && phase.value === 'LOBBY')
+const canStart = computed(
+  () =>
+    isHost.value &&
+    players.value.length === SHOWCASE_MAX_PLAYERS &&
+    phase.value === 'LOBBY',
+)
+const isDuelFull = computed(() => players.value.length >= SHOWCASE_MAX_PLAYERS)
+const waitingForOpponent = computed(() => players.value.length < SHOWCASE_MAX_PLAYERS)
 
 watch(
   phase,
@@ -180,7 +188,7 @@ async function saveDisplayName(): Promise<void> {
         <section class="rounded-xl border border-border bg-surface-raised p-4">
           <div class="mb-4 flex items-center justify-between">
             <h2 class="text-sm font-medium text-text">
-              Players ({{ players.length }}/10)
+              Duelists ({{ players.length }}/{{ SHOWCASE_MAX_PLAYERS }})
             </h2>
             <button
               type="button"
@@ -211,8 +219,18 @@ async function saveDisplayName(): Promise<void> {
         </section>
 
         <section class="rounded-xl border border-border bg-surface-raised p-4">
-          <h2 class="text-sm font-medium text-text">Waiting for host</h2>
-          <p class="mt-2 text-sm text-muted">Minimum 2 players required to start.</p>
+          <h2 class="text-sm font-medium text-text">
+            {{ isHost ? 'Ready to duel?' : 'Waiting for host' }}
+          </h2>
+          <p v-if="waitingForOpponent" class="mt-2 text-sm text-muted">
+            Waiting for your opponent to join this duel.
+          </p>
+          <p v-else class="mt-2 text-sm text-muted">
+            Both duelists are here — the host can start the match.
+          </p>
+          <p v-if="isDuelFull && !isHost" class="mt-1 text-xs text-muted">
+            This duel is full; no additional players can join.
+          </p>
 
           <div v-if="isHost" class="mt-4 space-y-2">
             <div class="flex items-center justify-between text-sm">
@@ -244,9 +262,11 @@ async function saveDisplayName(): Promise<void> {
             :disabled="!canStart || isStarting"
             @click="handleStartGame"
           >
-            Start game
+            Start duel
           </button>
-          <p v-else class="mt-6 text-sm text-muted">The host will start the game when everyone is ready.</p>
+          <p v-else class="mt-6 text-sm text-muted">
+            The host will start the duel once your opponent arrives.
+          </p>
         </section>
       </div>
 

@@ -143,7 +143,7 @@ const ruleCPlay = card('c-played', 3)
         <ol class="list-decimal space-y-1 pl-5">
           <li>Select a card (click or press 1–N).</li>
           <li>Confirm with the “Play card” button (or Enter).</li>
-          <li>Wait for the other players — everyone plays simultaneously.</li>
+          <li>Wait for your opponent — both players choose simultaneously.</li>
           <li>Cards resolve from lowest to highest each round.</li>
         </ol>
       </section>

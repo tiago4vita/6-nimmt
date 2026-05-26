@@ -3,15 +3,16 @@
 @import "@fontsource/inter/600.css";
 
 :root {
-  --color-surface: #0c0c0f;
-  --color-surface-raised: #16161a;
-  --color-felt: #1a2e1a;
-  --color-border: #2a2a32;
-  --color-text: #f4f4f5;
-  --color-muted: #a1a1aa;
-  --color-accent: #d4a017;
+  --color-surface: #f2f0eb;
+  --color-surface-raised: #ffffff;
+  --color-felt: #fafafa;
+  --color-border: #d4d0c8;
+  --color-text: #2a2a2a;
+  --color-muted: #6b6b6b;
+  --color-accent: #0099cc;
+  --color-accent-warm: #e85d04;
   --color-danger: #ef4444;
-  --color-success: #22c55e;
+  --color-success: #4caf50;
 }
 
 @theme {
@@ -23,6 +24,7 @@
   --color-text: var(--color-text);
   --color-muted: var(--color-muted);
   --color-accent: var(--color-accent);
+  --color-accent-warm: var(--color-accent-warm);
   --color-danger: var(--color-danger);
   --color-success: var(--color-success);
 }
@@ -93,8 +95,45 @@ body {
 
   .btn-primary {
     background: var(--color-accent);
-    color: var(--color-surface);
+    color: #ffffff;
     font-weight: 600;
+  }
+
+  .crt-game {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .crt-game::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.04) 0px,
+      rgba(0, 0, 0, 0.04) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    mix-blend-mode: multiply;
+  }
+
+  #app::before {
+    content: "";
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.025) 0px,
+      rgba(0, 0, 0, 0.025) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+    mix-blend-mode: multiply;
   }
 
   .btn-primary:hover:not(:disabled) {

@@ -2,7 +2,7 @@
 
 Task tracker for moving from **dev scaffold → playable MVP → portfolio polish**. Architecture and rules live in the other `.cursor/` docs — this file is the execution order.
 
-**Last reviewed:** 2026-05-23 (M5 manual QA complete on `cursor/m4-frontend-core`)
+**Last reviewed:** 2026-05-26 (M6 visual overhaul — Balatro/Wii direction)
 
 ---
 
@@ -21,7 +21,8 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 | PostgreSQL persistence | ⬜ Not started | `DATABASE_URL` in config; SQLModel/Alembic declared but unused at runtime |
 | Frontend core (M4) | ✅ Complete on branch | Router, composables, Home/Lobby/Game views, GraphQL operations, dark theme |
 | Frontend build | ✅ Complete | `npm run build` passes with game UI |
-| M6 UX (Sprints A–C) | ✅ Largely complete | Select→confirm, countdown, HUD, shortcuts, loading shells, toasts, rules drawer |
+| M6 UX (Sprints A–C) | ✅ Complete | Select→confirm, countdown, HUD, shortcuts, loading shells, toasts, rules drawer |
+| M6 Visual overhaul (3D scene) | 🔵 In progress | TresJS + light Wii tokens + CRT filter started; scene components WIP |
 | Post-game & rematch | ✅ Complete | Tie-aware `ResultsOverlay`; `returnToLobby` + Rematch / Exit room actions |
 | Lobby turn timer | ✅ Complete | Host sets `submitTimeoutSeconds` (3–60s, default 30) before start |
 | E2E playable demo (M5) | ✅ Complete | Manual two-browser QA passed (create → join → play → FINISHED, reconnect, rematch) |
@@ -30,7 +31,7 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 
 **Recent work (branch):** UX audit Sprints A–C; `submitDeadline` exposure; tie-aware results; `returnToLobby` / `updateSubmitTimeout` mutations; display-name persistence; HUD last-resolve row; **M5 portfolio demo verified manually**.
 
-**Next up:** **Merge to `main`**, then **M6 remainder** (a11y audit, optional SFX, score count-up) or **M2.7** Postgres if desired.
+**Next up:** **M6.1** (scene shell + table) — first deliverable in the visual overhaul track below. Merge to `main` can happen in parallel once a scene slice is stable.
 
 ### Remaining gaps (post-M4)
 
@@ -69,7 +70,7 @@ flowchart LR
 | **M3** GraphQL API | Queries, mutations, subscriptions | ✅ Done |
 | **M4** Frontend core | Router, session, lobby, game UI | ✅ Done on branch |
 | **M5** Playable MVP | Two browsers, full game loop | ✅ Done (manual QA) |
-| **M6** Polish | Design fidelity, motion, a11y, SFX | 🔵 **Current focus** — a11y audit + SFX remain |
+| **M6** Polish | Wii/Balatro 3D scene, motion, 2P showcase | 🔵 **Current focus** — visual overhaul track (6.1–6.12) |
 | **M7** Post-MVP | Match history, stats, prod profile | ⬜ Backlog |
 
 ---
@@ -306,53 +307,223 @@ Portfolio demo checklist from [deployment.md](./deployment.md). **Verified manua
 
 ## M6 — Polish & Showcase Quality
 
-Reference: [frontend-design.md](./frontend-design.md), **[ux-audit.md](./ux-audit.md)** (Nielsen heuristic backlog).
+**Creative direction (locked for this track):** Wii / Xbox 360 console vibes — **light-first**, off-white surfaces, subtle CRT scanlines + low-res feel. In-game: **TresJS/Three.js** table with tilted camera, flat 3D cards, fan hand, step-by-step animated resolve (Balatro clarity). **2 players max** for showcase scope. SFX deferred.
 
-### 6.1 Visual fidelity
+Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[ux-audit.md](./ux-audit.md)** (Nielsen backlog — UX sprints shipped).
 
-- [x] Dark theme tokens applied consistently
-- [x] Card gradients per value band; bone dot/ring indicators
-- [x] Felt surface behind board; amber accent on CTAs
+> **How to work this section:** Pick the **first unchecked** task in **6.1 → 6.12**. Each task is one reviewable PR/slice. Do not skip ahead on animation orchestration (6.8) until staging zones (6.6) land.
 
-### 6.2 Motion & feedback
+---
 
-- [x] Hover lift, submit lock fade, player-strip submit highlight, row highlight
-- [x] `prefers-reduced-motion` fallbacks for core animations
-- [ ] Score count-up on results (400ms planned; static today)
+### Shipped baseline (M6 UX — keep; do not regress)
+
+- [x] Select → confirm flow, `SubmitCountdown`, submit-pending + retry toasts
+- [x] Keyboard shortcuts (`Esc`, `Enter`, `1`–`N`) via `useGameShortcuts`
+- [x] `LoadingShell`, `RulesDrawer`, `GamePhaseOverlay`, tie-aware `ResultsOverlay`
+- [x] `PlayerStrip` submission highlights; `ConnectionStatusBanner`
+- [x] 2D motion fallbacks: hover lift, row highlight, `prefers-reduced-motion`
 - [x] Winner / tie gold border + trophy on results rows
 
-### 6.3 UX heuristics (Sprint A — see ux-audit.md)
+---
 
-- [x] Expose `submitDeadline` in GraphQL + `SubmitCountdown.vue`
-- [x] Select → confirm card flow; auto-submit selection on deadline
-- [x] Submit-pending indicator + mutation timeout/retry toasts
-- [x] `PlayerStrip` submission highlights; remove `SubmissionProgress` bar
-- [x] Error toasts with expandable “More details”
+### 6.0 — Foundation & scope *(complete)*
 
-### 6.4 UX heuristics (Sprint B)
+**Deliverable:** App boots with light tokens, CRT overlay, TresJS registered, game view mounts an empty scene canvas.
 
-- [x] Keyboard shortcuts (`Esc`, `Enter`, `1`–`N`) via `useGameShortcuts`
-- [x] Icon-only SFX + Leave (`IconButton.vue`)
-- [x] `LoadingShell.vue` for Home / Lobby / Game boot
-- [x] Timeout auto-play feedback overlay for affected player
-- [x] Visual `RulesDrawer` with `CardTile` examples
+- [x] Install `@tresjs/core`, `@tresjs/cientos`, `three`, `@tweenjs/tween.js`; wire Vite compiler + `main.ts`
+- [x] Light Wii tokens in `style.css` (`--color-surface` off-white, cyan accent)
+- [x] CRT scanline overlays (`.crt-game` viewport + global `#app::before`)
+- [x] `GameView` mounts `<GameScene />` inside `.crt-game` wrapper
+- [x] **2-player cap** — lobby UI + host start guard (`maxPlayers = 2`); copy updates (“duel”, not “table of 10”)
+- [x] **Design doc sync** — update `frontend-design.md` locked decisions (light-first, 3D board, 2P scope)
 
-### 6.5 Accessibility
+**Review checkpoint:** Two browsers can create/join/start; scene canvas renders (even if empty); lobby rejects a 3rd player.
 
-- [x] Keyboard: Tab + number keys + Enter confirm + Esc cancel/leave
-- [ ] `aria-pressed` / `aria-disabled` on cards
-- [ ] Toast `role="status"` / `role="alert"` (partial — `ConnectionStatusBanner` uses `role="status"`)
-- [ ] WCAG AA contrast audit on card faces
+---
 
-### 6.6 Optional SFX
+### 6.1 — Scene shell & camera
 
-- [ ] Web Audio API triggers; `sfxEnabled` in localStorage; muted by default
-- [ ] Assets in `frontend/public/sfx/`
+**Deliverable:** Static white infinite table, tilted perspective, clean lighting — no cards yet.
 
-### 6.7 Developer experience
+- [ ] `GameScene.vue` — TresCanvas, resize-safe aspect ratio inside `.crt-game`
+- [ ] `TableSurface.vue` — large off-white plane, soft shadow, slight gloss; feels “Wii white” not flat `#fff`
+- [ ] Camera rig — ~25–35° pitch, centered on row area; subtle ambient + directional light
+- [ ] `scene/constants.ts` — world units, card dimensions, table bounds (single source of truth)
 
+**Review checkpoint:** Empty table reads as a physical surface; no z-fighting; 60fps on laptop iGPU.
+
+---
+
+### 6.2 — Card mesh primitive
+
+**Deliverable:** One reusable 3D card with black back; face shows value + bone tier from existing chroma rules.
+
+- [ ] `CardMesh.vue` — thin box mesh, rounded feel via bevel or canvas texture padding
+- [ ] Black back material (placeholder until art pass)
+- [ ] `cardAppearance.ts` — map `value` + `bones` → face color/gradient texture (reuse hue bands from `CardTile`)
+- [ ] Face readable at table distance (large numeral, minimal bone marker)
+
+**Review checkpoint:** Drop a debug card in scene; rotate to verify back; values 1 / 55 / 104 look distinct.
+
+---
+
+### 6.3 — Row track (static board)
+
+**Deliverable:** Four row lanes on the table; seed cards from `rows` subscription lie flat, slightly embedded in felt zone.
+
+- [ ] `RowTrack.vue` — four parallel lanes, subtle lane guides (etched lines or shallow grooves)
+- [ ] Row cards laid **face-up, flat** on table (not standing)
+- [ ] Row highlight hook — amber wash when `highlightedRowIndex` set (from `lastResolvedPlays`)
+- [ ] Replace or hide legacy `GameBoard.vue` in play view once rows render in 3D
+
+**Review checkpoint:** Mid-game subscription snapshot matches 2D board card order; highlight visible on last resolved row.
+
+---
+
+### 6.4 — Hand fan layout
+
+**Deliverable:** Your hand renders as an IRL-style fan along the near edge of the table.
+
+- [ ] `fanLayout.ts` — arc positions + yaw per index (symmetric fan, sorted ascending)
+- [ ] `HandFan.vue` — renders `myHand` cards; faces toward camera
+- [ ] Hand locked state — desaturate / lower opacity when `handDisabled` or post-submit
+- [ ] Wire `@select` from raycast or invisible hit targets (keep keyboard path in 6.11)
+
+**Review checkpoint:** 10-card hand fans without overlap clipping; select state syncs with `selectedCardId`.
+
+---
+
+### 6.5 — Hover & select lift
+
+**Deliverable:** Balatro-style tactile hand — hover rises slightly; selected rises higher + accent edge.
+
+- [ ] `useCardLift.ts` — normalized lift tiers: rest → hover (+Y, +Z) → selected (+more Y, scale 1.02)
+- [ ] Tween transitions (~150ms hover, ~120ms select) via `@tweenjs/tween.js`
+- [ ] `prefers-reduced-motion` — snap to target transforms, keep color/ring cues
+- [ ] Selected card visually distinct from hover (ring / emissive rim — cyan accent)
+
+**Review checkpoint:** Mouse + keyboard selection both trigger lift; only one card at selected tier.
+
+---
+
+### 6.6 — Submit staging zones *(needs design answers)*
+
+**Deliverable:** On confirm, card animates from fan to a **table corner staging slot** (face-up, flat), waiting for opponent.
+
+- [ ] Define staging anchors — **your corner** (near-right) vs **opponent corner** (far-left / opposite side)
+- [ ] Submit animation — single arc path, ~400ms, ease-out; hand slot collapses fan gap
+- [ ] Opponent staging — when `hasSubmitted` (no value leak), show **card back** sliding from far edge
+- [ ] Hide opponent hand entirely — only staging slot + row track visible for them
+
+**Review checkpoint:** 2-browser test — neither client sees opponent hand; both see staging backs/counts before resolve.
+
+---
+
+### 6.7 — Confirm UX in 3D context
+
+**Deliverable:** Play flow feels intentional; no duplicate confusing hand UIs.
+
+- [ ] Decide layout: **overlay confirm bar** on canvas vs **integrated 3D confirm** (recommend: keep `CardConfirmBar` as HTML overlay for a11y)
+- [ ] Submit lock — selected card stays lifted until mutation resolves; others fade
+- [ ] Post-submit — card remains in staging zone; fan shows gap
+
+**Review checkpoint:** Full submit round-trip with existing mutation + toasts; no double-hand confusion.
+
+---
+
+### 6.8 — Animation orchestrator *(critical path)*
+
+**Deliverable:** All card motion goes through a **single-step queue** — one movement at a time, awaitable, cancellable on phase change.
+
+- [ ] `useCardMotionQueue.ts` (or scene store) — enqueue `{ type, cardId, from, to, duration }`
+- [ ] Step types: `HAND_TO_STAGING`, `STAGING_TO_ROW`, `ROW_TAKE`, `STAGING_RETURN` (if needed)
+- [ ] Phase guards — flush/skip queue on `LOBBY` / new `SUBMIT`; pause input during `RESOLVE`
+- [ ] Debug overlay (dev-only) — show current step index / queue length
+
+**Review checkpoint:** Artificial 5-step script runs sequentially without overlap; reduced-motion completes instantly in order.
+
+---
+
+### 6.9 — Resolve sequence animations
+
+**Deliverable:** Resolve reads like a tutorial — staging → row placement → row penalty — one beat at a time.
+
+- [ ] On `phase === RESOLVE'`, consume `lastResolvedPlays` in sort order (already ascending on server)
+- [ ] Per play: move staging card → target row slot (Rule A placement position)
+- [ ] Rule B — pause, shake row, collect 5 cards to player bone pile zone, played card starts row
+- [ ] Rule C — pause, toast copy, collect chosen row, then place card
+- [ ] Stagger ~350–500ms between plays; row highlight synced to active play
+
+**Review checkpoint:** Record a round with mixed rules; viewer can narrate what happened from motion alone.
+
+---
+
+### 6.10 — Bone pop feedback
+
+**Deliverable:** When a player gains bones, a big **+N 🦴** pops center-screen with player-colored glow.
+
+- [ ] `BonePop.vue` HTML overlay (not Three.js text — sharper at CRT scale)
+- [ ] Trigger on each resolve step where `bonesTaken > 0`
+- [ ] Player tint — map `playerId` → shadow color (you vs opponent palette)
+- [ ] Animation — scale 0.6→1.1→1, fade out ~900ms; stack if multiple in sequence (offset Y)
+
+**Review checkpoint:** Taking a row with 12+ bones feels impactful; zero-bone steps stay silent.
+
+---
+
+### 6.11 — Bone-tier card materials *(v1 improvise)*
+
+**Deliverable:** Higher bone cards feel more dangerous — materials/particles scale with `bones` (1 → 7).
+
+- [ ] Tier table in `cardAppearance.ts`:
+
+  | Bones | V1 treatment |
+  |---|---|
+  | 1 | Matte face |
+  | 2 | Soft inner glow |
+  | 3 | Stronger saturation + subtle shimmer |
+  | 5 | Emissive edge + slow pulse |
+  | 7 | Particle sparkles + scanline shimmer on face |
+
+- [ ] Apply to 3D face material + optional cheap particles (Points / sprite) for 5+
+- [ ] Row + staging cards use same tier rules
+
+**Review checkpoint:** Card 55 is unmistakably “scary”; card 1 stays calm; performance OK with 10 cards visible.
+
+---
+
+### 6.12 — Chrome & lobby light pass
+
+**Deliverable:** Shell screens match Wii light aesthetic; game HUD floats over CRT viewport.
+
+- [ ] `AppShell`, Home, Lobby — off-white panels, soft borders, cyan CTAs (replace amber-dark assumptions)
+- [ ] `GameHudBar` / `PlayerStrip` — compact, semi-transparent over scene
+- [ ] `ResultsOverlay` — score count-up (400ms) + light theme; keep rematch flow
+- [ ] `MobileDesktopNotice` copy still accurate
+
+**Review checkpoint:** Full flow Home → Lobby → Play → Results feels one product, not two themes.
+
+---
+
+### 6.13 — Accessibility & input bridge
+
+**Deliverable:** 3D visuals do not regress keyboard-first UX from shipped M6.
+
+- [ ] `1`–`N` + Enter still submit; lifted card tracks keyboard focus
+- [ ] `aria-pressed` / `aria-disabled` on confirm bar + hidden list of hand cards (sr-only mirror if needed)
+- [ ] Toast `role="status"` / `role="alert"` audit
+- [ ] Contrast check on light theme card faces (WCAG AA)
+
+---
+
+### 6.14 — Deferred (post-showcase)
+
+- [ ] Card back art (custom texture per deck)
+- [ ] SFX — Web Audio API, `sfxEnabled` in localStorage, assets in `public/sfx/`
+- [ ] Dark theme toggle (if ever — not in v1 showcase)
+- [ ] 3+ player support (re-enable when visuals scale)
 - [ ] README quick-start verified on clean machine
-- [ ] Match row visible in Postgres after game (`psql` spot-check)
+- [ ] Postgres spot-check (`M2.7`)
 
 ---
 
@@ -385,14 +556,14 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 | **S4** | M3 | ✅ Done | GraphQL API + subscription demo in playground |
 | **S5** | M4.1–4.5 | ✅ Done on branch | Router, session, Home/Lobby/Game wired to GraphQL |
 | **S6** | M5 QA + fixes | ✅ Done | Two-browser MVP verified manually |
-| **S7** | M6 remainder | 🔵 **In progress** | a11y audit, optional SFX, score count-up |
+| **S7** | M6 visual overhaul | 🔵 **In progress** | 6.0 → 6.12 in order (see M6 section) |
 | **S8** | M2.7 + M7 picks | ⬜ Pending | Postgres persistence + extras |
 
 **Immediate actions:**
 
-1. Merge `cursor/m4-frontend-core` to `main`.
-2. M6 remainder: a11y audit (`aria-*`, toast roles, contrast), optional SFX, results score count-up.
-3. Optional: sync `openapi.yaml` with rematch / turn-timer fields.
+1. **M6.1** — scene shell (empty table, camera, lights).
+2. Continue **6.2 → 6.12** in order; review between each slice.
+3. Optional parallel: merge branch to `main` once 6.3+ is stable.
 
 ---
 

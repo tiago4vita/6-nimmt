@@ -8,6 +8,7 @@ from app.infrastructure import rooms as room_service
 from app.infrastructure import sessions as session_service
 from app.infrastructure.errors import InfrastructureError
 from app.infrastructure.models import GameRoomState
+from app.showcase import SHOWCASE_MAX_PLAYERS
 from app.graphql.context import GraphQLContext
 from app.graphql.errors import GameErrorCode, map_infrastructure_error
 from app.graphql.types import (
@@ -96,14 +97,14 @@ class Mutation:
         self,
         info: Info[GraphQLContext, None],
         display_name: str,
-        max_players: int = 10,
+        max_players: int | None = None,
     ) -> MutationResult:
         guest_id = await _require_guest(info)
         try:
             room = await room_service.create_room(
                 guest_id=guest_id,
                 display_name=display_name,
-                max_players=max_players,
+                max_players=max_players if max_players is not None else SHOWCASE_MAX_PLAYERS,
             )
         except InfrastructureError as exc:
             return _failure_from_exception(exc)

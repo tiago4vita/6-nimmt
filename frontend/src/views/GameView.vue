@@ -5,8 +5,7 @@ import AppShell from '@/components/layout/AppShell.vue'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog.vue'
 import ConnectionStatusBanner from '@/components/feedback/ConnectionStatusBanner.vue'
 import CardConfirmBar from '@/components/game/CardConfirmBar.vue'
-import CardHand from '@/components/game/CardHand.vue'
-import GameBoard from '@/components/game/GameBoard.vue'
+import GameScene from '@/components/game/scene/GameScene.vue'
 import GameHudBar from '@/components/game/GameHudBar.vue'
 import GamePhaseOverlay from '@/components/game/GamePhaseOverlay.vue'
 import PlayerStrip from '@/components/game/PlayerStrip.vue'
@@ -51,7 +50,6 @@ const showResults = ref(false)
 
 const {
   selectedCardId,
-  optimisticSelectedId,
   isHandLocked,
   isSubmitting,
   submitFailure,
@@ -250,13 +248,24 @@ async function handleExitRoom(): Promise<void> {
         @leave="showLeaveConfirm = true"
       />
       <PlayerStrip :players="players" :my-player-id="myPlayerId" :phase="phase" />
-      <GameBoard :rows="rows" :highlighted-row-index="highlightedRowIndex" />
+
+      <div class="crt-game h-[min(520px,58vh)] w-full">
+        <GameScene
+          :rows="rows"
+          :my-hand="myHand"
+          :selected-card-id="selectedCardId"
+          :submitted-card-id="mySubmittedCard?.id ?? null"
+          :hand-disabled="isHandLocked || phase !== 'SUBMIT'"
+          :highlighted-row-index="highlightedRowIndex"
+          @select="selectCard"
+        />
+      </div>
 
       <section class="space-y-3 rounded-xl border border-border bg-surface-raised p-4">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-medium text-text">Your hand</h2>
           <span v-if="mySubmittedCard" class="text-xs text-success">
-            Submitted — waiting for others
+            Submitted — waiting for opponent
           </span>
           <span
             v-else-if="phase === 'SUBMIT' && !selectedCardId"
@@ -276,18 +285,8 @@ async function handleExitRoom(): Promise<void> {
           v-if="phase === 'SUBMIT' && !mySubmittedCard"
           class="text-[11px] uppercase tracking-wide text-muted"
         >
-          1–{{ Math.min(myHand.length, 9) }} quick select · Enter to play · Esc to cancel
+          Click a card in the fan · 1–{{ Math.min(myHand.length, 9) }} quick select · Enter to play · Esc to cancel
         </p>
-
-        <CardHand
-          :cards="myHand"
-          :selected-card-id="selectedCardId"
-          :optimistic-selected-id="optimisticSelectedId"
-          :submitted-card-id="mySubmittedCard?.id ?? null"
-          :disabled="isHandLocked || phase !== 'SUBMIT'"
-          :is-submitting="isSubmitting"
-          @select="selectCard"
-        />
 
         <CardConfirmBar
           :card="selectedCard"
