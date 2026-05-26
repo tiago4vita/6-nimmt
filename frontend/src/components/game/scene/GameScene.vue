@@ -1,19 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { ContactShadows } from '@tresjs/cientos'
 import { TresCanvas } from '@tresjs/core'
 
 import type { Card, Row } from '@/graphql/types'
 import {
   LIGHTING,
-  SCENE,
+  playfieldCenter,
+  PLAYFIELD_HALF_DEPTH,
+  PLAYFIELD_HALF_WIDTH,
+  SHADOW,
   TABLE,
-  TABLE_HALF_DEPTH,
-  TABLE_HALF_WIDTH,
-  CONTACT_SHADOW_SCALE,
 } from '@/lib/scene/constants'
+import { readSceneColors } from '@/lib/scene/tokens'
 import SceneCamera from '@/components/game/scene/SceneCamera.vue'
+import HandFan from '@/components/game/scene/HandFan.vue'
 import RowTrack from '@/components/game/scene/RowTrack.vue'
-import TableSurface from '@/components/game/scene/TableSurface.vue'
 
 const props = defineProps<{
   rows: Row[]
@@ -24,55 +26,70 @@ const props = defineProps<{
   highlightedRowIndex: number | null
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   select: [cardId: string]
 }>()
+
+const colors = computed(() => readSceneColors())
+const [playfieldX, , playfieldZ] = playfieldCenter()
 </script>
 
 <template>
   <TresCanvas
-    class="scene-canvas h-full w-full rounded-xl"
-    :clear-color="SCENE.clearColor"
+    class="scene-canvas h-full w-full"
+    :clear-color="colors.clear"
     shadows
   >
     <SceneCamera />
 
     <TresAmbientLight
       :intensity="LIGHTING.ambientIntensity"
-      :color="LIGHTING.ambientColor"
+      :color="colors.lightAmbient"
     />
     <TresDirectionalLight
       cast-shadow
       :position="LIGHTING.directionalPosition"
       :intensity="LIGHTING.directionalIntensity"
-      :color="LIGHTING.directionalColor"
+      :color="colors.lightDirectional"
       :shadow-mapSize-width="2048"
       :shadow-mapSize-height="2048"
       :shadow-camera-near="0.5"
-      :shadow-camera-far="40"
-      :shadow-camera-left="-TABLE_HALF_WIDTH"
-      :shadow-camera-right="TABLE_HALF_WIDTH"
-      :shadow-camera-top="TABLE_HALF_DEPTH"
-      :shadow-camera-bottom="-TABLE_HALF_DEPTH"
+      :shadow-camera-far="45"
+      :shadow-camera-left="playfieldX - PLAYFIELD_HALF_WIDTH"
+      :shadow-camera-right="playfieldX + PLAYFIELD_HALF_WIDTH"
+      :shadow-camera-top="playfieldZ + PLAYFIELD_HALF_DEPTH"
+      :shadow-camera-bottom="playfieldZ - PLAYFIELD_HALF_DEPTH"
     />
     <TresHemisphereLight
       :intensity="LIGHTING.hemisphereIntensity"
-      :color="LIGHTING.hemisphereSky"
-      :ground-color="LIGHTING.hemisphereGround"
+      :color="colors.lightHemisphereSky"
+      :ground-color="colors.lightHemisphereGround"
     />
 
-    <TableSurface />
+    <TresGroup :position="playfieldCenter()">
+      <ContactShadows
+        :position-y="TABLE.y + 0.002"
+        :opacity="SHADOW.opacity"
+        :blur="SHADOW.blur"
+        :color="colors.shadow"
+        :scale="SHADOW.scale"
+        :resolution="768"
+        :smooth="true"
+      />
+    </TresGroup>
 
-    <RowTrack :rows="props.rows" :highlighted-row-index="props.highlightedRowIndex" />
+    <RowTrack
+      :rows="props.rows"
+      :highlighted-row-index="props.highlightedRowIndex"
+      :highlight-color="colors.accentWarm"
+    />
 
-    <ContactShadows
-      :position-y="TABLE.y + 0.002"
-      :opacity="0.28"
-      :blur="2.8"
-      color="#6b6560"
-      :scale="CONTACT_SHADOW_SCALE"
-      :resolution="512"
-      :smooth="true"
+    <HandFan
+      :hand="props.myHand"
+      :selected-card-id="props.selectedCardId"
+      :submitted-card-id="props.submittedCardId"
+      :disabled="props.handDisabled"
+      @select="emit('select', $event)"
     />
   </TresCanvas>
 </template>
@@ -82,5 +99,6 @@ defineEmits<{
   display: block;
   min-height: 0;
   overflow: hidden;
+  background: var(--color-scene-clear);
 }
 </style>

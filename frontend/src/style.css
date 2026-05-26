@@ -13,6 +13,12 @@
   --color-accent-warm: #e85d04;
   --color-danger: #ef4444;
   --color-success: #4caf50;
+  --color-scene-clear: var(--color-surface);
+  --color-scene-shadow: var(--color-border);
+  --color-scene-light-ambient: var(--color-surface-raised);
+  --color-scene-light-directional: var(--color-surface-raised);
+  --color-scene-light-hemisphere-sky: var(--color-surface-raised);
+  --color-scene-light-hemisphere-ground: var(--color-border);
 }
 
 @theme {
@@ -102,38 +108,6 @@ body {
   .crt-game {
     position: relative;
     isolation: isolate;
-  }
-
-  .crt-game::after {
-    content: "";
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    z-index: 2;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0, 0, 0, 0.04) 0px,
-      rgba(0, 0, 0, 0.04) 1px,
-      transparent 1px,
-      transparent 3px
-    );
-    mix-blend-mode: multiply;
-  }
-
-  #app::before {
-    content: "";
-    pointer-events: none;
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    background: repeating-linear-gradient(
-      0deg,
-      rgba(0, 0, 0, 0.025) 0px,
-      rgba(0, 0, 0, 0.025) 1px,
-      transparent 1px,
-      transparent 4px
-    );
-    mix-blend-mode: multiply;
   }
 
   .btn-primary:hover:not(:disabled) {

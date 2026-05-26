@@ -249,7 +249,7 @@ async function handleExitRoom(): Promise<void> {
       />
       <PlayerStrip :players="players" :my-player-id="myPlayerId" :phase="phase" />
 
-      <div class="crt-game h-[min(520px,58vh)] w-full">
+      <div class="crt-game h-[min(640px,65vh)] w-full">
         <GameScene
           :rows="rows"
           :my-hand="myHand"

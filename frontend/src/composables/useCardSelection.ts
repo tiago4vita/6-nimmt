@@ -73,7 +73,8 @@ export function useCardSelection({
   }
 
   function selectCardByIndex(index: number): void {
-    const card = myHand.value[index]
+    const sorted = [...myHand.value].sort((a, b) => a.value - b.value)
+    const card = sorted[index]
     if (card) {
       selectCard(card.id)
     }

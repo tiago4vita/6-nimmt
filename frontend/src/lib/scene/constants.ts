@@ -1,72 +1,107 @@
 import { MathUtils } from 'three'
 
-/** Card mesh sizing — used by hand fan, row track, and staging (6.2+). */
 export const CARD = {
-  width: 0.72,
-  height: 1.0,
-  depth: 0.045,
-  gap: 0.08,
+  width: 1.41, // world-space card face width
+  height: 1.95, // world-space card face height
+  depth: 0.058, // card thickness used by mesh depth and table embed
+  gap: 0.1, // spacing between cards in a row track
 } as const
 
-/** Table plane — large enough to feel infinite at the tilted camera angle. */
 export const TABLE = {
-  width: 28,
-  depth: 20,
-  y: 0,
-  surfaceColor: 0xf4f2ed,
-  edgeColor: 0xe8e4dc,
-  roughness: 0.38,
-  metalness: 0.06,
+  y: 0, // table / ground plane height
 } as const
 
-/** Row track footprint on the table (cards land here in 6.3). */
+export const PLAYFIELD = {
+  width: 17, // playable area width along X
+  depth: 12, // playable area depth along Z
+  leftX: -8, // X coordinate of the playfield left edge
+  frontZ: 7.2, // Z coordinate of the edge closest to the camera / player
+  padding: 0.35, // inset from playfield edges for rows and layout math
+} as const
+
 export const ROW_AREA = {
-  center: [0, TABLE.y, 0] as [number, number, number],
-  width: 14,
-  depth: 9,
-  laneCount: 4,
-  laneSpacing: 2.1,
+  width: PLAYFIELD.width - PLAYFIELD.padding * 2, // row track width inside playfield padding
+  depth: PLAYFIELD.depth - PLAYFIELD.padding * 2 - 2, // row track depth with extra back margin
+  laneCount: 4, // number of row lanes on the table
+  laneSpacing: 2.35, // world-space distance between row lane centers
+  leftX: PLAYFIELD.leftX + PLAYFIELD.padding, // X anchor where row cards start growing right
+  originZ: PLAYFIELD.frontZ - PLAYFIELD.padding - 0.55, // Z center of row 0, nearest the player
 } as const
 
-/** Hand fan anchor — near edge of table toward the camera. */
 export const HAND_ANCHOR = {
-  z: TABLE.depth / 2 - 2.4,
-  liftY: TABLE.y + CARD.depth / 2 + 0.004,
+  z: PLAYFIELD.frontZ + 1.55, // hand strip depth, in front of the playfield toward the camera
+  yLift: 0.12, // extra height above the pitch-aligned hand base
 } as const
+
+export const HAND_FAN = {
+  gap: 0.09, // horizontal gap between hand cards in the strip
+} as const
+
+export function playfieldCenter(): [number, number, number] {
+  return [
+    PLAYFIELD.leftX + PLAYFIELD.width / 2,
+    TABLE.y,
+    PLAYFIELD.frontZ - PLAYFIELD.depth / 2,
+  ]
+}
 
 export const CAMERA = {
-  fov: 38,
-  pitchDeg: 30,
-  distance: 17,
-  near: 0.1,
-  far: 100,
-  target: ROW_AREA.center,
-} as const
-
-export const SCENE = {
-  clearColor: '#e8e6e1',
+  fov: 36, // vertical field of view in degrees
+  pitchDeg: 75, // camera tilt down toward the table; lower feels more seated
+  distance: 20, // orbit distance from the look-at target
+  near: 0.1, // near clipping plane
+  far: 100, // far clipping plane
+  target: [
+    PLAYFIELD.leftX + PLAYFIELD.width * 0.5, // look-at X, centered on the hand strip
+    TABLE.y, // look-at Y, table height
+    PLAYFIELD.frontZ - PLAYFIELD.depth * 0.3, // look-at Z, forward on the table toward the player
+  ] as [number, number, number],
+  playerOffset: [
+    0, // lateral offset from look-at X
+    0, // vertical offset; negative lowers eye height
+    0.85, // offset toward the player along +Z
+  ] as [number, number, number],
 } as const
 
 export const LIGHTING = {
-  ambientIntensity: 0.52,
-  ambientColor: '#fffaf5',
-  directionalIntensity: 0.62,
-  directionalColor: '#fff8ee',
-  directionalPosition: [10, 18, 8] as [number, number, number],
-  hemisphereIntensity: 0.22,
-  hemisphereSky: '#ffffff',
-  hemisphereGround: '#d4d0c8',
+  ambientIntensity: 0.54, // fill light brightness
+  directionalIntensity: 0.58, // key light brightness
+  directionalPosition: [
+    10, // key light X
+    18, // key light Y
+    8, // key light Z
+  ] as [number, number, number],
+  hemisphereIntensity: 0.2, // sky/ground bounce light brightness
 } as const
 
-export function cameraPosition(): [number, number, number] {
-  const pitchRad = MathUtils.degToRad(CAMERA.pitchDeg)
-  const [tx, ty, tz] = CAMERA.target
-  const horizontal = Math.cos(pitchRad) * CAMERA.distance
-  const y = ty + Math.sin(pitchRad) * CAMERA.distance
-  const z = tz + horizontal
-  return [tx, y, z]
+export const SHADOW = {
+  opacity: 0.16, // contact shadow strength on the playfield
+  blur: 3.6, // contact shadow softness
+  scale: Math.max(PLAYFIELD.width, PLAYFIELD.depth) * 1.06, // shadow plane size relative to playfield
+} as const
+
+export function cameraPitchRad(): number {
+  return MathUtils.degToRad(CAMERA.pitchDeg)
 }
 
-export const TABLE_HALF_WIDTH = TABLE.width / 2
-export const TABLE_HALF_DEPTH = TABLE.depth / 2
-export const CONTACT_SHADOW_SCALE = Math.max(TABLE.width, TABLE.depth)
+export function handCardRotation(): [number, number, number] {
+  return [-cameraPitchRad(), 0, 0]
+}
+
+export function handCardBaseY(): number {
+  const pitchRad = cameraPitchRad()
+  return TABLE.y + CARD.height * 0.5 * Math.cos(pitchRad) + HAND_ANCHOR.yLift
+}
+
+export function cameraPosition(): [number, number, number] {
+  const pitchRad = cameraPitchRad()
+  const [tx, ty, tz] = CAMERA.target
+  const [ox, oy, oz] = CAMERA.playerOffset
+  const horizontal = Math.cos(pitchRad) * CAMERA.distance
+  const y = ty + Math.sin(pitchRad) * CAMERA.distance + oy
+  const z = tz + horizontal + oz
+  return [tx + ox, y, z]
+}
+
+export const PLAYFIELD_HALF_WIDTH = PLAYFIELD.width / 2 // half-width for shadow and bounds math
+export const PLAYFIELD_HALF_DEPTH = PLAYFIELD.depth / 2 // half-depth for shadow and bounds math
