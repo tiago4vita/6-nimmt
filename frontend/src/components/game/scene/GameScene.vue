@@ -12,9 +12,10 @@ import {
   CONTACT_SHADOW_SCALE,
 } from '@/lib/scene/constants'
 import SceneCamera from '@/components/game/scene/SceneCamera.vue'
+import RowTrack from '@/components/game/scene/RowTrack.vue'
 import TableSurface from '@/components/game/scene/TableSurface.vue'
 
-defineProps<{
+const props = defineProps<{
   rows: Row[]
   myHand: Card[]
   selectedCardId: string | null
@@ -61,6 +62,8 @@ defineEmits<{
     />
 
     <TableSurface />
+
+    <RowTrack :rows="props.rows" :highlighted-row-index="props.highlightedRowIndex" />
 
     <ContactShadows
       :position-y="TABLE.y + 0.002"

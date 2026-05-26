@@ -354,27 +354,27 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.2 — Card mesh primitive
+### 6.2 — Card mesh primitive *(complete — dependency for 6.3)*
 
 **Deliverable:** One reusable 3D card with black back; face shows value + bone tier from existing chroma rules.
 
-- [ ] `CardMesh.vue` — thin box mesh, rounded feel via bevel or canvas texture padding
-- [ ] Black back material (placeholder until art pass)
-- [ ] `cardAppearance.ts` — map `value` + `bones` → face color/gradient texture (reuse hue bands from `CardTile`)
-- [ ] Face readable at table distance (large numeral, minimal bone marker)
+- [x] `CardMesh.vue` — thin box mesh, rounded feel via bevel or canvas texture padding
+- [x] Black back material (placeholder until art pass)
+- [x] `cardAppearance.ts` — map `value` + `bones` → face color/gradient texture (reuse hue bands from `CardTile`)
+- [x] Face readable at table distance (large numeral, minimal bone marker)
 
 **Review checkpoint:** Drop a debug card in scene; rotate to verify back; values 1 / 55 / 104 look distinct.
 
 ---
 
-### 6.3 — Row track (static board)
+### 6.3 — Row track (static board) *(complete)*
 
 **Deliverable:** Four row lanes on the table; seed cards from `rows` subscription lie flat, slightly embedded in felt zone.
 
-- [ ] `RowTrack.vue` — four parallel lanes, subtle lane guides (etched lines or shallow grooves)
-- [ ] Row cards laid **face-up, flat** on table (not standing)
-- [ ] Row highlight hook — amber wash when `highlightedRowIndex` set (from `lastResolvedPlays`)
-- [ ] Replace or hide legacy `GameBoard.vue` in play view once rows render in 3D
+- [x] `RowTrack.vue` — four parallel lanes, subtle lane guides (etched lines or shallow grooves)
+- [x] Row cards laid **face-up, flat** on table (not standing)
+- [x] Row highlight hook — amber wash when `highlightedRowIndex` set (from `lastResolvedPlays`)
+- [x] Replace or hide legacy `GameBoard.vue` in play view once rows render in 3D
 
 **Review checkpoint:** Mid-game subscription snapshot matches 2D board card order; highlight visible on last resolved row.
 
@@ -561,8 +561,7 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.2** — card mesh primitive (face + black back).
-2. Continue **6.2 → 6.12** in order; review between each slice.
+1. **M6.4** — hand fan layout.
 3. Optional parallel: merge branch to `main` once 6.3+ is stable.
 
 ---
