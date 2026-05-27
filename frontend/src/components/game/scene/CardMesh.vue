@@ -2,14 +2,19 @@
 import {
   BoxGeometry,
   Color,
+  EdgesGeometry,
   Group,
+  LineBasicMaterial,
+  LineSegments,
   Mesh,
   MeshBasicMaterial,
   PlaneGeometry,
 } from 'three'
-import { markRaw, onBeforeUnmount, shallowRef, watch } from 'vue'
+import { computed, markRaw, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 
 import type { Card } from '@/graphql/types'
+import { useCardJiggle } from '@/composables/useCardJiggle'
+import { useCardLift, type CardLiftTier } from '@/composables/useCardLift'
 import {
   createCardBackTexture,
   createCardFaceTexture,
@@ -47,6 +52,10 @@ const emit = defineEmits<{
 }>()
 
 const root = shallowRef<Group | null>(null)
+const hovered = ref(false)
+const selectionRing = shallowRef<LineSegments | null>(null)
+const selectionRingMaterial = shallowRef<LineBasicMaterial | null>(null)
+
 const CARD_MATERIAL = {
   alphaTest: 0.08,
   depthWrite: true,
@@ -74,6 +83,101 @@ const halfDepth = CARD.depth / 2
 /** Bias the face toward the camera so the back plane cannot peek past the silhouette. */
 const FACE_BIAS = 0.004
 
+const liftEnabled = computed(
+  () => props.orientation === 'hand' && props.interactive && !props.dimmed,
+)
+
+const liftTier = computed<CardLiftTier>(() => {
+  if (!liftEnabled.value) {
+    return 'rest'
+  }
+  if (props.selected) {
+    return 'selected'
+  }
+  if (hovered.value) {
+    return 'hover'
+  }
+  return 'rest'
+})
+
+const selectedRef = computed(() => props.selected)
+
+function applyTransform(target: Group): void {
+  if (props.position) {
+    target.position.set(
+      props.position[0] + jiggle.offsetX,
+      props.position[1] + lift.offsetY + jiggle.offsetY,
+      props.position[2] + lift.offsetZ + jiggle.offsetZ,
+    )
+  }
+  if (props.rotation) {
+    target.rotation.set(
+      props.rotation[0] + jiggle.rotX,
+      props.rotation[1] + jiggle.rotY,
+      props.rotation[2] + jiggle.rotZ,
+    )
+  }
+  target.scale.setScalar(lift.scale)
+  target.renderOrder = props.renderOrder
+}
+
+function applyVisualState(target: Group): void {
+  const opacity = props.dimmed ? 0.42 : 1
+  faceTint.set(0xffffff)
+  if (props.selected) {
+    faceTint.lerp(accentColor, 0.22)
+  } else if (hovered.value && liftEnabled.value) {
+    faceTint.lerp(accentColor, 0.06)
+  }
+  faceMaterial.color.copy(faceTint)
+
+  target.traverse((child) => {
+    if (!(child instanceof Mesh)) {
+      return
+    }
+    const materials = Array.isArray(child.material) ? child.material : [child.material]
+    for (const material of materials) {
+      if (material === hitMaterial) {
+        continue
+      }
+      material.transparent = opacity < 1 || material === faceMaterial || material === backMaterial
+      material.opacity = opacity
+      material.needsUpdate = true
+    }
+  })
+
+  const ringMaterial = selectionRingMaterial.value
+  const ring = selectionRing.value
+  if (ringMaterial && ring) {
+    ringMaterial.opacity = lift.ringOpacity
+    ringMaterial.transparent = lift.ringOpacity < 1
+    ring.visible = lift.ringOpacity > 0.01
+    ringMaterial.needsUpdate = true
+  }
+}
+
+function refreshCardPresentation(): void {
+  if (!root.value) {
+    return
+  }
+  applyTransform(root.value)
+  applyVisualState(root.value)
+}
+
+const { lift } = useCardLift({
+  tier: liftTier,
+  enabled: liftEnabled,
+  onUpdate: refreshCardPresentation,
+})
+
+const { jiggle, triggerJiggle } = useCardJiggle({
+  cardId: props.card.id,
+  hovered,
+  selected: selectedRef,
+  enabled: liftEnabled,
+  onUpdate: refreshCardPresentation,
+})
+
 function buildCardGroup(): Group {
   const group = markRaw(new Group())
 
@@ -87,7 +191,27 @@ function buildCardGroup(): Group {
     back.rotation.y = Math.PI
     back.renderOrder = 0
 
-    group.add(back, face)
+    const ringMaterial = markRaw(
+      new LineBasicMaterial({
+        color: accentHex,
+        transparent: true,
+        opacity: 0,
+        depthTest: true,
+        toneMapped: false,
+      }),
+    )
+    const ringGeometry = markRaw(
+      new EdgesGeometry(new BoxGeometry(CARD.width + 0.05, CARD.height + 0.05, 0.002)),
+    )
+    const ring = markRaw(new LineSegments(ringGeometry, ringMaterial))
+    ring.position.z = halfDepth + FACE_BIAS + 0.003
+    ring.renderOrder = 2
+    ring.visible = false
+
+    selectionRingMaterial.value = ringMaterial
+    selectionRing.value = ring
+
+    group.add(back, face, ring)
   } else {
     const face = markRaw(new Mesh(cardPlane, faceMaterial))
     face.rotation.x = -Math.PI / 2
@@ -110,40 +234,6 @@ function buildCardGroup(): Group {
   return group
 }
 
-function applyTransform(target: Group): void {
-  if (props.position) {
-    target.position.set(...props.position)
-  }
-  if (props.rotation) {
-    target.rotation.set(...props.rotation)
-  }
-  target.renderOrder = props.renderOrder
-}
-
-function applyVisualState(target: Group): void {
-  const opacity = props.dimmed ? 0.42 : 1
-  faceTint.set(0xffffff)
-  if (props.selected) {
-    faceTint.lerp(accentColor, 0.18)
-  }
-  faceMaterial.color.copy(faceTint)
-
-  target.traverse((child) => {
-    if (!(child instanceof Mesh)) {
-      return
-    }
-    const materials = Array.isArray(child.material) ? child.material : [child.material]
-    for (const material of materials) {
-      if (material === hitMaterial) {
-        continue
-      }
-      material.transparent = opacity < 1 || material === faceMaterial || material === backMaterial
-      material.opacity = opacity
-      material.needsUpdate = true
-    }
-  })
-}
-
 root.value = buildCardGroup()
 
 watch(
@@ -157,22 +247,20 @@ watch(
 
 watch(
   () => props.position,
-  (position) => {
-    if (!root.value || !position) {
-      return
+  () => {
+    if (root.value) {
+      applyTransform(root.value)
     }
-    root.value.position.set(...position)
   },
   { deep: true },
 )
 
 watch(
   () => props.rotation,
-  (rotation) => {
-    if (!root.value || !rotation) {
-      return
+  () => {
+    if (root.value) {
+      applyTransform(root.value)
     }
-    root.value.rotation.set(...rotation)
   },
   { deep: true },
 )
@@ -195,13 +283,23 @@ function handleClick(event: { stopPropagation: () => void }): void {
 }
 
 function handlePointerEnter(): void {
-  if (props.interactive) {
-    document.body.style.cursor = 'pointer'
+  if (!props.interactive) {
+    return
+  }
+  hovered.value = true
+  triggerJiggle()
+  document.body.style.cursor = 'pointer'
+  if (root.value) {
+    applyVisualState(root.value)
   }
 }
 
 function handlePointerLeave(): void {
+  hovered.value = false
   document.body.style.cursor = ''
+  if (root.value) {
+    applyVisualState(root.value)
+  }
 }
 
 onBeforeUnmount(() => {
@@ -210,6 +308,8 @@ onBeforeUnmount(() => {
   faceMaterial.dispose()
   backMaterial.dispose()
   hitMaterial.dispose()
+  selectionRingMaterial.value?.dispose()
+  selectionRing.value?.geometry.dispose()
   cardPlane.dispose()
 })
 </script>

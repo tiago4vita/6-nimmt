@@ -23,7 +23,7 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 | Frontend core (M4)            | ✅ Complete on branch | Router, composables, Home/Lobby/Game views, GraphQL operations, dark theme             |
 | Frontend build                | ✅ Complete           | `npm run build` passes with game UI                                                    |
 | M6 UX (Sprints A–C)           | ✅ Complete           | Select→confirm, countdown, HUD, shortcuts, loading shells, toasts, rules drawer        |
-| M6 Visual overhaul (3D scene) | 🔵 In progress       | TresJS + light Wii tokens + CRT filter started; scene components WIP                   |
+| M6 Visual overhaul (3D scene) | 🔵 In progress       | TresJS + light Wii tokens + CRT filter; 6.5 hover/select lift shipped |
 | Post-game & rematch           | ✅ Complete           | Tie-aware `ResultsOverlay`; `returnToLobby` + Rematch / Exit room actions              |
 | Lobby turn timer              | ✅ Complete           | Host sets `submitTimeoutSeconds` (3–60s, default 30) before start                      |
 | E2E playable demo (M5)        | ✅ Complete           | Manual two-browser QA passed (create → join → play → FINISHED, reconnect, rematch)     |
@@ -437,8 +437,8 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
   - ~**35–45% horizontal overlap** (sorted ascending)
   - Deterministic **Y jitter** per card (hash/id-based, ±small world units) — organic, stable across frames
   - Optional tiny Z stagger for depth sort
-- [ ] `HandFan.vue` / `CardMesh`: no yaw on hand orientation
-- [ ] Keyboard `1–N` still follows ascending visual order
+- [x] `HandFan.vue` / `CardMesh`: no yaw on hand orientation
+- [x] Keyboard `1–N` still follows ascending visual order
 
 **Review checkpoint:** Screenshot compare — canvas blends with page; no gray table; shadow bounds obvious; row 1 cards legible; hand looks like Balatro strip (parallel, overlapping, slightly uneven baseline).
 
@@ -446,14 +446,14 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.5 — Hover & select lift
+### 6.5 — Hover & select lift *(complete)*
 
 **Deliverable:** Balatro-style tactile hand — hover rises slightly; selected rises higher + accent edge.
 
-- `useCardLift.ts` — normalized lift tiers: rest → hover (+Y, +Z) → selected (+more Y, scale 1.02)
-- Tween transitions (~150ms hover, ~120ms select) via `@tweenjs/tween.js`
-- `prefers-reduced-motion` — snap to target transforms, keep color/ring cues
-- Selected card visually distinct from hover (ring / emissive rim — cyan accent)
+- [x] `useCardLift.ts` — normalized lift tiers: rest → hover (+Y, +Z) → selected (+more Y, scale 1.02)
+- [x] Tween transitions (~150ms hover, ~120ms select) via `@tweenjs/tween.js`
+- [x] `prefers-reduced-motion` — snap to target transforms, keep color/ring cues
+- [x] Selected card visually distinct from hover (ring / emissive rim — cyan accent)
 
 **Review checkpoint:** Mouse + keyboard selection both trigger lift; only one card at selected tier.
 
@@ -618,8 +618,8 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.5** — hover & select lift (`useCardLift.ts`).
-2. Continue **6.6 → 6.12** in order.
+1. **M6.6** — submit staging zones.
+2. Continue **6.7 → 6.12** in order.
 
 ---
 

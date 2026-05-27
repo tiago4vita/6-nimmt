@@ -14,6 +14,9 @@ import {
 } from '@/lib/scene/constants'
 import { readSceneColors } from '@/lib/scene/tokens'
 import SceneCamera from '@/components/game/scene/SceneCamera.vue'
+import SceneAxisGizmo from '@/components/game/scene/SceneAxisGizmo.vue'
+import SceneAxisLegend from '@/components/game/scene/SceneAxisLegend.vue'
+import SceneLoopDriver from '@/components/game/scene/SceneLoopDriver.vue'
 import HandFan from '@/components/game/scene/HandFan.vue'
 import RowTrack from '@/components/game/scene/RowTrack.vue'
 
@@ -35,12 +38,15 @@ const [playfieldX, , playfieldZ] = playfieldCenter()
 </script>
 
 <template>
-  <TresCanvas
-    class="scene-canvas h-full w-full"
-    :clear-color="colors.clear"
-    shadows
-  >
-    <SceneCamera />
+  <div class="scene-root relative h-full w-full">
+    <TresCanvas
+      class="scene-canvas h-full w-full"
+      :clear-color="colors.clear"
+      shadows
+    >
+      <SceneCamera />
+      <SceneLoopDriver />
+      <SceneAxisGizmo />
 
     <TresAmbientLight
       :intensity="LIGHTING.ambientIntensity"
@@ -91,7 +97,9 @@ const [playfieldX, , playfieldZ] = playfieldCenter()
       :disabled="props.handDisabled"
       @select="emit('select', $event)"
     />
-  </TresCanvas>
+    </TresCanvas>
+    <SceneAxisLegend />
+  </div>
 </template>
 
 <style scoped>

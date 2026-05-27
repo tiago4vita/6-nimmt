@@ -1,3 +1,5 @@
+import { MathUtils } from 'three'
+
 import type { Card } from '@/graphql/types'
 
 import {
@@ -15,7 +17,13 @@ export interface FanSlot {
   rotation: [number, number, number]
 }
 
-/** Ascending hand strip — aligned, uniform gap, camera-parallel tilt. */
+function fanYawRad(index: number, count: number): number {
+  const centerIndex = (count - 1) / 2
+  const offsetFromCenter = index - centerIndex
+  return MathUtils.degToRad(offsetFromCenter * HAND_FAN.yawDegPerStep)
+}
+
+/** Ascending hand strip with Balatro-style Y-axis fan rotation from center. */
 export function computeFanLayout(cards: Card[]): FanSlot[] {
   const sorted = [...cards].sort((a, b) => a.value - b.value)
   const count = sorted.length
@@ -27,12 +35,12 @@ export function computeFanLayout(cards: Card[]): FanSlot[] {
   const totalWidth = CARD.width + Math.max(count - 1, 0) * step
   const stripCenterX = PLAYFIELD.leftX + PLAYFIELD.width / 2
   const startX = stripCenterX - totalWidth / 2 + CARD.width / 2
-  const rotation = handCardRotation()
+  const [pitchX] = handCardRotation()
   const baseY = handCardBaseY()
 
   return sorted.map((card, index) => ({
     card,
     position: [startX + index * step, baseY, HAND_ANCHOR.z],
-    rotation,
+    rotation: [pitchX, fanYawRad(index, count), 0],
   }))
 }

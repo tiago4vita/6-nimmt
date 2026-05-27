@@ -35,6 +35,19 @@ export const HAND_ANCHOR = {
 
 export const HAND_FAN = {
   gap: 0.09, // horizontal gap between hand cards in the strip
+  yawDegPerStep: 1, // Y rotation per index step from hand center (Balatro fan)
+} as const
+
+export const HAND_MOTION = {
+  jiggleDurationMs: 250,
+  selectedPopZ: -0.67, // forward pop toward camera when selected
+  selectedPopDurationMs: 120,
+  selectedJiggleIntensity: 1.3,
+} as const
+
+/** Dev-only scene overlays — axis gizmo, bounds, etc. */
+export const SCENE_DEBUG = {
+  showAxisIndicator: import.meta.env.DEV,
 } as const
 
 export function playfieldCenter(): [number, number, number] {
