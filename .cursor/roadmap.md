@@ -459,26 +459,27 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.6 — Submit staging zones *(needs design answers)*
+### 6.6 — Submit staging zones *(complete — lite)*
 
 **Deliverable:** On confirm, card animates from fan to a **table corner staging slot** (face-up, flat), waiting for opponent.
 
-- Define staging anchors — **your corner** (near-right) vs **opponent corner** (far-left / opposite side)
-- Submit animation — single arc path, ~400ms, ease-out; hand slot collapses fan gap
-- Opponent staging — when `hasSubmitted` (no value leak), show **card back** sliding from far edge
-- Hide opponent hand entirely — only staging slot + row track visible for them
+- [x] Staging anchors — **your corner** (near-right) vs **opponent corner** (far-left / deep)
+- [x] Submit animation — arc path, ~400ms, ease-out; hand slot collapses fan gap
+- [x] Opponent staging — when `hasSubmitted`, show **card back** sliding from far edge
+- [x] Opponent hand hidden — only staging slot + row track (never rendered)
 
 **Review checkpoint:** 2-browser test — neither client sees opponent hand; both see staging backs/counts before resolve.
 
 ---
 
-### 6.7 — Confirm UX in 3D context
+### 6.7 — Confirm UX in 3D context *(complete)*
 
 **Deliverable:** Play flow feels intentional; no duplicate confusing hand UIs.
 
-- Decide layout: **overlay confirm bar** on canvas vs **integrated 3D confirm** (recommend: keep `CardConfirmBar` as HTML overlay for a11y)
-- Submit lock — selected card stays lifted until mutation resolves; others fade
-- Post-submit — card remains in staging zone; fan shows gap
+- [x] **HTML overlay confirm** on canvas (Play + Cancel); duplicate hand panel removed
+- [x] Keyboard hint centered at page bottom
+- [x] Submit lock — hand frozen (no fade) during mutation; selected card arcs to staging
+- [x] Post-submit — card remains in staging zone; fan shows gap
 
 **Review checkpoint:** Full submit round-trip with existing mutation + toasts; no double-hand confusion.
 
@@ -618,8 +619,8 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.6** — submit staging zones.
-2. Continue **6.7 → 6.12** in order.
+1. **M6.8** — animation orchestrator (`useCardMotionQueue.ts`).
+2. Continue **6.9 → 6.12** in order.
 
 ---
 

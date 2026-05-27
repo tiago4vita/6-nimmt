@@ -9,21 +9,28 @@ const props = defineProps<{
   hand: Card[]
   selectedCardId: string | null
   submittedCardId: string | null
+  hiddenCardIds: string[]
   disabled: boolean
+  freezeVisuals: boolean
 }>()
 
 const emit = defineEmits<{
   select: [cardId: string]
 }>()
 
+const hiddenSet = computed(() => new Set(props.hiddenCardIds))
+
 const playableHand = computed(() =>
-  props.hand.filter((card) => card.id !== props.submittedCardId),
+  props.hand.filter(
+    (card) =>
+      card.id !== props.submittedCardId && !hiddenSet.value.has(card.id),
+  ),
 )
 
 const fanSlots = computed(() => computeFanLayout(playableHand.value))
 
 function isDimmed(cardId: string): boolean {
-  if (!props.disabled) {
+  if (props.freezeVisuals || !props.disabled) {
     return false
   }
   return props.selectedCardId !== cardId

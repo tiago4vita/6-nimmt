@@ -13,6 +13,19 @@
   --color-accent-warm: #e85d04;
   --color-danger: #ef4444;
   --color-success: #4caf50;
+  --color-card-back: #4a4a4a;
+  --color-card-edge: #3a3a3a;
+  --color-card-face-text: #ffffff;
+  --color-card-face-shadow: rgba(0, 0, 0, 0.35);
+  --color-card-bone-marker: rgba(255, 255, 255, 0.88);
+  --color-card-band-violet-from: #6366f1;
+  --color-card-band-violet-to: #7c3aed;
+  --color-card-band-teal-from: #14b8a6;
+  --color-card-band-teal-to: #059669;
+  --color-card-band-amber-from: #f59e0b;
+  --color-card-band-amber-to: #ea580c;
+  --color-card-band-rose-from: #f43f5e;
+  --color-card-band-rose-to: #dc2626;
   --color-scene-clear: var(--color-surface);
   --color-scene-shadow: var(--color-border);
   --color-scene-light-ambient: var(--color-surface-raised);
@@ -33,6 +46,17 @@
   --color-accent-warm: var(--color-accent-warm);
   --color-danger: var(--color-danger);
   --color-success: var(--color-success);
+  --color-card-back: var(--color-card-back);
+  --color-card-edge: var(--color-card-edge);
+  --color-card-face-text: var(--color-card-face-text);
+  --color-card-band-violet-from: var(--color-card-band-violet-from);
+  --color-card-band-violet-to: var(--color-card-band-violet-to);
+  --color-card-band-teal-from: var(--color-card-band-teal-from);
+  --color-card-band-teal-to: var(--color-card-band-teal-to);
+  --color-card-band-amber-from: var(--color-card-band-amber-from);
+  --color-card-band-amber-to: var(--color-card-band-amber-to);
+  --color-card-band-rose-from: var(--color-card-band-rose-from);
+  --color-card-band-rose-to: var(--color-card-band-rose-to);
 }
 
 html,

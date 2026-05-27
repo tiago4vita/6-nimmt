@@ -15,7 +15,9 @@ import { isFinishedPhase } from '@/graphql/types'
 import { useCardSelection } from '@/composables/useCardSelection'
 import { useGameRoom } from '@/composables/useGameRoom'
 import { useGameShortcuts } from '@/composables/useGameShortcuts'
+import { useStagingFlight } from '@/composables/useStagingFlight'
 import { useToast } from '@/composables/useToast'
+import { fanSlotStagingStart, findFanSlot } from '@/lib/scene/fanLayout'
 
 const props = defineProps<{
   roomId: string
@@ -64,6 +66,19 @@ const {
   onSubmit: async (cardId) => submitCard(cardId),
 })
 
+const {
+  flyingCardId,
+  stagedYourCard,
+  opponentVisible,
+  beginYourFlight,
+  cancelYourFlight,
+  resetStaging,
+  notifyOpponentSubmitted,
+  registerOpponentOpacity,
+} = useStagingFlight(() => {
+  /* staged card committed in composable */
+})
+
 const selectedCard = computed(() => {
   const id = selectedCardId.value
   if (!id || mySubmittedCard.value) {
@@ -71,6 +86,33 @@ const selectedCard = computed(() => {
   }
   return myHand.value.find((card) => card.id === id) ?? null
 })
+
+const opponent = computed(() =>
+  players.value.find((player) => player.id !== myPlayerId.value) ?? null,
+)
+
+const stagedCardDisplay = computed(
+  () => stagedYourCard.value ?? mySubmittedCard.value,
+)
+
+const hiddenHandCardIds = computed(() => {
+  const ids: string[] = []
+  if (flyingCardId.value) {
+    ids.push(flyingCardId.value)
+  }
+  return ids
+})
+
+const showConfirmOverlay = computed(
+  () =>
+    phase.value === 'SUBMIT' &&
+    selectedCard.value !== null &&
+    mySubmittedCard.value === null,
+)
+
+const handFrozen = computed(() => isSubmitting.value)
+
+const shortcutHintCount = computed(() => Math.min(myHand.value.length, 9))
 
 const submitDeadline = computed(() => room.value?.submitDeadline ?? null)
 
@@ -90,7 +132,7 @@ function handleDeadline(): void {
     return
   }
   if (selectedCardId.value) {
-    void submitSelectedCard()
+    void handleConfirm()
     return
   }
   const lowest = myHand.value.reduce<number | null>(
@@ -107,11 +149,55 @@ function handleDeadline(): void {
   timeoutMessageHandle = window.setTimeout(clearTimeoutMessage, 1800)
 }
 
+async function handleConfirm(): Promise<void> {
+  const card = selectedCard.value
+  if (!card || isHandLocked.value) {
+    return
+  }
+
+  const slot = findFanSlot(myHand.value, card.id)
+  if (slot) {
+    await beginYourFlight(card, fanSlotStagingStart(slot, true))
+  } else {
+    const failure = await submitSelectedCard()
+    if (failure) {
+      cancelYourFlight()
+    }
+    return
+  }
+
+  const failure = await submitSelectedCard()
+  if (failure) {
+    cancelYourFlight()
+  }
+}
+
 watch([phase, mySubmittedCard], ([nextPhase, submitted]) => {
   if (nextPhase !== 'SUBMIT' || submitted) {
     clearTimeoutMessage()
   }
 })
+
+watch(roundNumber, () => {
+  resetStaging()
+})
+
+watch(phase, (nextPhase) => {
+  if (nextPhase !== 'SUBMIT') {
+    resetStaging()
+  }
+})
+
+watch(
+  () => [phase.value, opponent.value?.hasSubmitted] as const,
+  ([currentPhase, submitted], previous) => {
+    const wasSubmitted = previous?.[1] ?? false
+    if (currentPhase === 'SUBMIT' && submitted && !wasSubmitted) {
+      notifyOpponentSubmitted()
+    }
+  },
+  { immediate: true },
+)
 
 const isSlowSubmit = ref(false)
 let slowSubmitHandle: number | null = null
@@ -141,7 +227,7 @@ useGameShortcuts({
   hasSelection,
   hasOpenDialog,
   selectByIndex: selectCardByIndex,
-  confirmSelection: () => void submitSelectedCard(),
+  confirmSelection: () => void handleConfirm(),
   clearSelection,
   openLeaveConfirm: () => {
     showLeaveConfirm.value = true
@@ -176,7 +262,7 @@ watch(submitFailure, (failure) => {
     details: failure.details ?? failure.code,
     action:
       failure.code === 'CLIENT_TIMEOUT' || failure.code === undefined
-        ? { label: 'Retry', onClick: () => void submitSelectedCard() }
+        ? { label: 'Retry', onClick: () => void handleConfirm() }
         : undefined,
   })
 })
@@ -249,52 +335,50 @@ async function handleExitRoom(): Promise<void> {
       />
       <PlayerStrip :players="players" :my-player-id="myPlayerId" :phase="phase" />
 
-      <div class="crt-game h-[min(640px,65vh)] w-full">
+      <div class="crt-game relative h-[min(640px,65vh)] w-full">
         <GameScene
           :rows="rows"
           :my-hand="myHand"
           :selected-card-id="selectedCardId"
           :submitted-card-id="mySubmittedCard?.id ?? null"
+          :hidden-hand-card-ids="hiddenHandCardIds"
           :hand-disabled="isHandLocked || phase !== 'SUBMIT'"
+          :hand-frozen="handFrozen"
           :highlighted-row-index="highlightedRowIndex"
+          :staged-your-card="stagedCardDisplay"
+          :opponent-staging-visible="opponentVisible"
+          @register-opponent-opacity="registerOpponentOpacity"
           @select="selectCard"
         />
-      </div>
 
-      <section class="space-y-3 rounded-xl border border-border bg-surface-raised p-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-sm font-medium text-text">Your hand</h2>
-          <span v-if="mySubmittedCard" class="text-xs text-success">
-            Submitted — waiting for opponent
-          </span>
-          <span
-            v-else-if="phase === 'SUBMIT' && !selectedCardId"
-            class="text-xs text-muted"
-          >
-            Select a card, then confirm
-          </span>
-          <span
-            v-else-if="phase === 'SUBMIT' && selectedCardId"
-            class="text-xs text-accent"
-          >
-            Ready — confirm to play
-          </span>
+        <div
+          v-if="showConfirmOverlay"
+          class="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-4"
+        >
+          <div class="pointer-events-auto">
+            <CardConfirmBar
+              :card="selectedCard"
+              :is-submitting="isSubmitting"
+              @confirm="handleConfirm"
+              @cancel="clearSelection"
+            />
+          </div>
         </div>
 
         <p
-          v-if="phase === 'SUBMIT' && !mySubmittedCard"
-          class="text-[11px] uppercase tracking-wide text-muted"
+          v-if="mySubmittedCard && phase === 'SUBMIT'"
+          class="pointer-events-none absolute inset-x-0 bottom-4 z-10 text-center text-xs font-medium text-success"
         >
-          Click a card in the fan · 1–{{ Math.min(myHand.length, 9) }} quick select · Enter to play · Esc to cancel
+          Submitted — waiting for opponent
         </p>
+      </div>
 
-        <CardConfirmBar
-          :card="selectedCard"
-          :is-submitting="isSubmitting"
-          @confirm="submitSelectedCard"
-          @cancel="clearSelection"
-        />
-      </section>
+      <p
+        v-if="phase === 'SUBMIT' && !mySubmittedCard"
+        class="text-center text-[11px] uppercase tracking-wide text-muted"
+      >
+        Click a card in the fan · 1–{{ shortcutHintCount }} quick select · Enter to play · Esc to cancel
+      </p>
 
       <p v-if="subscriptionError" class="text-sm text-danger">{{ subscriptionError }}</p>
     </div>

@@ -32,10 +32,12 @@ const props = withDefaults(
     card: Card
     position?: [number, number, number]
     rotation?: [number, number, number]
-    orientation?: 'table' | 'hand'
+    orientation?: 'table' | 'hand' | 'staging'
     dimmed?: boolean
     selected?: boolean
     interactive?: boolean
+    showBackOnly?: boolean
+    opacity?: number
     renderOrder?: number
   }>(),
   {
@@ -43,6 +45,8 @@ const props = withDefaults(
     dimmed: false,
     selected: false,
     interactive: false,
+    showBackOnly: false,
+    opacity: 1,
     renderOrder: 0,
   },
 )
@@ -122,7 +126,8 @@ function applyTransform(target: Group): void {
 }
 
 function applyVisualState(target: Group): void {
-  const opacity = props.dimmed ? 0.42 : 1
+  const baseOpacity = props.opacity
+  const opacity = props.dimmed ? baseOpacity * 0.42 : baseOpacity
   faceTint.set(0xffffff)
   if (props.selected) {
     faceTint.lerp(accentColor, 0.22)
@@ -212,6 +217,26 @@ function buildCardGroup(): Group {
     selectionRing.value = ring
 
     group.add(back, face, ring)
+  } else if (props.orientation === 'staging') {
+    if (props.showBackOnly) {
+      const back = markRaw(new Mesh(cardPlane, backMaterial))
+      back.rotation.x = -Math.PI / 2
+      back.position.y = halfDepth + FACE_BIAS
+      back.renderOrder = 1
+      group.add(back)
+    } else {
+      const face = markRaw(new Mesh(cardPlane, faceMaterial))
+      face.rotation.x = Math.PI / 2
+      face.position.y = -halfDepth - FACE_BIAS
+      face.renderOrder = 1
+
+      const back = markRaw(new Mesh(cardPlane, backMaterial))
+      back.rotation.x = -Math.PI / 2
+      back.position.y = halfDepth
+      back.renderOrder = 0
+
+      group.add(back, face)
+    }
   } else {
     const face = markRaw(new Mesh(cardPlane, faceMaterial))
     face.rotation.x = -Math.PI / 2
@@ -266,7 +291,7 @@ watch(
 )
 
 watch(
-  () => [props.dimmed, props.selected] as const,
+  () => [props.dimmed, props.selected, props.opacity] as const,
   () => {
     if (root.value) {
       applyVisualState(root.value)

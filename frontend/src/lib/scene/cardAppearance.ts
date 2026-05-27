@@ -1,16 +1,9 @@
 import { CanvasTexture, Color, LinearFilter, SRGBColorSpace, type Texture } from 'three'
 
-export interface HueBand {
-  from: string
-  to: string
-}
+import { hueBandForValue, readCardFaceColors } from '@/lib/cardColors'
 
-const HUE_BANDS: { max: number; band: HueBand }[] = [
-  { max: 26, band: { from: '#6366f1', to: '#7c3aed' } },
-  { max: 52, band: { from: '#14b8a6', to: '#059669' } },
-  { max: 78, band: { from: '#f59e0b', to: '#ea580c' } },
-  { max: Number.POSITIVE_INFINITY, band: { from: '#f43f5e', to: '#dc2626' } },
-]
+export type { CardHueBand as HueBand } from '@/lib/cardColors'
+export { hueBandForValue } from '@/lib/cardColors'
 
 /** Shared art board — face and back use identical dimensions and corner radius. */
 export const CARD_TEXTURE = {
@@ -21,14 +14,10 @@ export const CARD_TEXTURE = {
   radius: 36,
 } as const
 
-const TEXTURE_VERSION = 2
+const TEXTURE_VERSION = 3
 
 const faceTextureCache = new Map<string, CanvasTexture>()
 let backTextureCache: CanvasTexture | null = null
-
-export function hueBandForValue(value: number): HueBand {
-  return HUE_BANDS.find((entry) => value <= entry.max)!.band
-}
 
 function roundRect(
   ctx: CanvasRenderingContext2D,
@@ -64,8 +53,14 @@ function fillRoundedPanel(ctx: CanvasRenderingContext2D, fill: string | CanvasGr
   ctx.fill()
 }
 
-function drawBoneMarker(ctx: CanvasRenderingContext2D, bones: number, cx: number, cy: number): void {
-  ctx.fillStyle = 'rgba(255, 255, 255, 0.88)'
+function drawBoneMarker(
+  ctx: CanvasRenderingContext2D,
+  bones: number,
+  cx: number,
+  cy: number,
+  markerColor: string,
+): void {
+  ctx.fillStyle = markerColor
   ctx.font = '600 68px Inter, ui-sans-serif, system-ui, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -95,6 +90,7 @@ function buildFaceCanvas(value: number, bones: number): HTMLCanvasElement {
     return canvas
   }
 
+  const colors = readCardFaceColors()
   ctx.clearRect(0, 0, canvas.width, canvas.height)
 
   const band = hueBandForValue(value)
@@ -103,16 +99,16 @@ function buildFaceCanvas(value: number, bones: number): HTMLCanvasElement {
   gradient.addColorStop(1, band.to)
   fillRoundedPanel(ctx, gradient)
 
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = colors.faceText
   ctx.font = '700 256px Inter, ui-sans-serif, system-ui, sans-serif'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)'
+  ctx.shadowColor = colors.faceShadow
   ctx.shadowBlur = 12
   ctx.fillText(String(value), canvas.width / 2, canvas.height * 0.4)
   ctx.shadowBlur = 0
 
-  drawBoneMarker(ctx, bones, canvas.width / 2, canvas.height * 0.78)
+  drawBoneMarker(ctx, bones, canvas.width / 2, canvas.height * 0.78, colors.boneMarker)
   return canvas
 }
 
@@ -125,8 +121,9 @@ function buildBackCanvas(): HTMLCanvasElement {
     return canvas
   }
 
+  const colors = readCardFaceColors()
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  fillRoundedPanel(ctx, '#101010')
+  fillRoundedPanel(ctx, colors.back)
   return canvas
 }
 
@@ -175,9 +172,11 @@ export function disposeCardFaceTexture(texture: Texture | null | undefined): voi
 }
 
 export function cardEdgeColor(): Color {
-  return new Color(0x1c1c1c)
+  const { edge } = readCardFaceColors()
+  return new Color(edge)
 }
 
 export function cardBackColor(): Color {
-  return new Color(0x101010)
+  const { back } = readCardFaceColors()
+  return new Color(back)
 }

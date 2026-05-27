@@ -45,6 +45,21 @@ export const HAND_MOTION = {
   selectedJiggleIntensity: 1.3,
 } as const
 
+/** Staging slots — shared bottom-right corner; cards rest face-normal toward world -Y. */
+export const STAGING = {
+  durationMs: 480,
+  arcHeight: 0.55,
+  embed: 0.001,
+  opponentFadeDurationMs: 480,
+  /** Group rotation at rest — identity; staging mesh face normal is built toward world -Y. */
+  rotation: [0, 0, 0] as [number, number, number],
+  /** Bottom-right of playfield (near player, table right edge). */
+  slot: {
+    insetRight: PLAYFIELD.padding,
+    insetFromFront: 1.1,
+  },
+} as const
+
 /** Dev-only scene overlays — axis gizmo, bounds, etc. */
 export const SCENE_DEBUG = {
   showAxisIndicator: import.meta.env.DEV,
@@ -104,6 +119,14 @@ export function handCardRotation(): [number, number, number] {
 export function handCardBaseY(): number {
   const pitchRad = cameraPitchRad()
   return TABLE.y + CARD.height * 0.5 * Math.cos(pitchRad) + HAND_ANCHOR.yLift
+}
+
+export function stagingSurfaceY(): number {
+  return TABLE.y + CARD.depth / 2 + STAGING.embed
+}
+
+export function stagingRotation(): [number, number, number] {
+  return [...STAGING.rotation]
 }
 
 export function cameraPosition(): [number, number, number] {

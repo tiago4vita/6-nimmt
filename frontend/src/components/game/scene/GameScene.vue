@@ -19,18 +19,25 @@ import SceneAxisLegend from '@/components/game/scene/SceneAxisLegend.vue'
 import SceneLoopDriver from '@/components/game/scene/SceneLoopDriver.vue'
 import HandFan from '@/components/game/scene/HandFan.vue'
 import RowTrack from '@/components/game/scene/RowTrack.vue'
+import StagingFlightMesh from '@/components/game/scene/StagingFlightMesh.vue'
+import SubmitStaging from '@/components/game/scene/SubmitStaging.vue'
 
 const props = defineProps<{
   rows: Row[]
   myHand: Card[]
   selectedCardId: string | null
   submittedCardId: string | null
+  hiddenHandCardIds: string[]
   handDisabled: boolean
+  handFrozen: boolean
   highlightedRowIndex: number | null
+  stagedYourCard: Card | null
+  opponentStagingVisible: boolean
 }>()
 
 const emit = defineEmits<{
   select: [cardId: string]
+  'register-opponent-opacity': [setter: ((opacity: number) => void) | null]
 }>()
 
 const colors = computed(() => readSceneColors())
@@ -48,55 +55,65 @@ const [playfieldX, , playfieldZ] = playfieldCenter()
       <SceneLoopDriver />
       <SceneAxisGizmo />
 
-    <TresAmbientLight
-      :intensity="LIGHTING.ambientIntensity"
-      :color="colors.lightAmbient"
-    />
-    <TresDirectionalLight
-      cast-shadow
-      :position="LIGHTING.directionalPosition"
-      :intensity="LIGHTING.directionalIntensity"
-      :color="colors.lightDirectional"
-      :shadow-mapSize-width="2048"
-      :shadow-mapSize-height="2048"
-      :shadow-camera-near="0.5"
-      :shadow-camera-far="45"
-      :shadow-camera-left="playfieldX - PLAYFIELD_HALF_WIDTH"
-      :shadow-camera-right="playfieldX + PLAYFIELD_HALF_WIDTH"
-      :shadow-camera-top="playfieldZ + PLAYFIELD_HALF_DEPTH"
-      :shadow-camera-bottom="playfieldZ - PLAYFIELD_HALF_DEPTH"
-    />
-    <TresHemisphereLight
-      :intensity="LIGHTING.hemisphereIntensity"
-      :color="colors.lightHemisphereSky"
-      :ground-color="colors.lightHemisphereGround"
-    />
-
-    <TresGroup :position="playfieldCenter()">
-      <ContactShadows
-        :position-y="TABLE.y + 0.002"
-        :opacity="SHADOW.opacity"
-        :blur="SHADOW.blur"
-        :color="colors.shadow"
-        :scale="SHADOW.scale"
-        :resolution="768"
-        :smooth="true"
+      <TresAmbientLight
+        :intensity="LIGHTING.ambientIntensity"
+        :color="colors.lightAmbient"
       />
-    </TresGroup>
+      <TresDirectionalLight
+        cast-shadow
+        :position="LIGHTING.directionalPosition"
+        :intensity="LIGHTING.directionalIntensity"
+        :color="colors.lightDirectional"
+        :shadow-mapSize-width="2048"
+        :shadow-mapSize-height="2048"
+        :shadow-camera-near="0.5"
+        :shadow-camera-far="45"
+        :shadow-camera-left="playfieldX - PLAYFIELD_HALF_WIDTH"
+        :shadow-camera-right="playfieldX + PLAYFIELD_HALF_WIDTH"
+        :shadow-camera-top="playfieldZ + PLAYFIELD_HALF_DEPTH"
+        :shadow-camera-bottom="playfieldZ - PLAYFIELD_HALF_DEPTH"
+      />
+      <TresHemisphereLight
+        :intensity="LIGHTING.hemisphereIntensity"
+        :color="colors.lightHemisphereSky"
+        :ground-color="colors.lightHemisphereGround"
+      />
 
-    <RowTrack
-      :rows="props.rows"
-      :highlighted-row-index="props.highlightedRowIndex"
-      :highlight-color="colors.accentWarm"
-    />
+      <TresGroup :position="playfieldCenter()">
+        <ContactShadows
+          :position-y="TABLE.y + 0.002"
+          :opacity="SHADOW.opacity"
+          :blur="SHADOW.blur"
+          :color="colors.shadow"
+          :scale="SHADOW.scale"
+          :resolution="768"
+          :smooth="true"
+        />
+      </TresGroup>
 
-    <HandFan
-      :hand="props.myHand"
-      :selected-card-id="props.selectedCardId"
-      :submitted-card-id="props.submittedCardId"
-      :disabled="props.handDisabled"
-      @select="emit('select', $event)"
-    />
+      <RowTrack
+        :rows="props.rows"
+        :highlighted-row-index="props.highlightedRowIndex"
+        :highlight-color="colors.accentWarm"
+      />
+
+      <SubmitStaging
+        :your-card="props.stagedYourCard"
+        :opponent-visible="props.opponentStagingVisible"
+        @register-opponent-opacity="emit('register-opponent-opacity', $event)"
+      />
+
+      <StagingFlightMesh />
+
+      <HandFan
+        :hand="props.myHand"
+        :selected-card-id="props.selectedCardId"
+        :submitted-card-id="props.submittedCardId"
+        :hidden-card-ids="props.hiddenHandCardIds"
+        :disabled="props.handDisabled"
+        :freeze-visuals="props.handFrozen"
+        @select="emit('select', $event)"
+      />
     </TresCanvas>
     <SceneAxisLegend />
   </div>

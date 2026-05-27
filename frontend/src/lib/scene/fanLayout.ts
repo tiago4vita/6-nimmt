@@ -8,8 +8,10 @@ import {
   handCardRotation,
   HAND_ANCHOR,
   HAND_FAN,
+  HAND_MOTION,
   PLAYFIELD,
 } from '@/lib/scene/constants'
+import type { StagingTransform } from '@/lib/scene/stagingLayout'
 
 export interface FanSlot {
   card: Card
@@ -43,4 +45,17 @@ export function computeFanLayout(cards: Card[]): FanSlot[] {
     position: [startX + index * step, baseY, HAND_ANCHOR.z],
     rotation: [pitchX, fanYawRad(index, count), 0],
   }))
+}
+
+export function findFanSlot(hand: Card[], cardId: string): FanSlot | null {
+  return computeFanLayout(hand).find((slot) => slot.card.id === cardId) ?? null
+}
+
+/** Hand slot pose for staging arc start (includes selected Z pop if applicable). */
+export function fanSlotStagingStart(slot: FanSlot, selected = false): StagingTransform {
+  const zLift = selected ? HAND_MOTION.selectedPopZ : 0
+  return {
+    position: [slot.position[0], slot.position[1], slot.position[2] + zLift],
+    rotation: [...slot.rotation],
+  }
 }
