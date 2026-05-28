@@ -2,28 +2,32 @@
 import { markRaw, onBeforeUnmount, shallowRef } from 'vue'
 
 import {
-  clearStagingFlight,
-  registerStagingFlightFaceUpdater,
-  registerStagingFlightGroup,
-} from '@/lib/scene/stagingFlightRuntime'
+  clearCardFlight,
+  registerCardFlightFaceUpdater,
+  registerCardFlightGroup,
+} from '@/lib/scene/cardFlightRuntime'
 import { createStagingCardGroup } from '@/lib/scene/stagingCardGroup'
 
 const PLACEHOLDER_CARD = { id: '__flight__', value: 1, bones: 1 }
 
-const stagingCard = createStagingCardGroup(PLACEHOLDER_CARD)
-const root = shallowRef(markRaw(stagingCard.group))
+const flightCard = createStagingCardGroup(PLACEHOLDER_CARD)
+const root = shallowRef(markRaw(flightCard.group))
 
-stagingCard.group.visible = false
-registerStagingFlightGroup(stagingCard.group)
-registerStagingFlightFaceUpdater((value, bones) => {
-  stagingCard.setCardFace(value, bones)
+flightCard.group.visible = false
+registerCardFlightGroup(flightCard.group)
+registerCardFlightFaceUpdater((value, bones, showBack) => {
+  flightCard.setShowBack(showBack)
+  if (!showBack) {
+    flightCard.setCardFace(value, bones)
+  }
+  flightCard.setOpacity(1)
 })
 
 onBeforeUnmount(() => {
-  registerStagingFlightFaceUpdater(null)
-  registerStagingFlightGroup(null)
-  clearStagingFlight()
-  stagingCard.dispose()
+  registerCardFlightFaceUpdater(null)
+  registerCardFlightGroup(null)
+  clearCardFlight()
+  flightCard.dispose()
 })
 </script>
 

@@ -485,16 +485,18 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.8 — Animation orchestrator *(critical path)*
+### 6.8 — Animation orchestrator *(complete)*
 
 **Deliverable:** All card motion goes through a **single-step queue** — one movement at a time, awaitable, cancellable on phase change.
 
-- `useCardMotionQueue.ts` (or scene store) — enqueue `{ type, cardId, from, to, duration }`
-- Step types: `HAND_TO_STAGING`, `STAGING_TO_ROW`, `ROW_TAKE`, `STAGING_RETURN` (if needed)
-- Phase guards — flush/skip queue on `LOBBY` / new `SUBMIT`; pause input during `RESOLVE`
-- Debug overlay (dev-only) — show current step index / queue length
+- [x] `useCardMotionQueue.ts` — enqueue `{ type, cardId, from, to, duration }`
+- [x] `useGameMotion.ts` — wires submit + resolve sequences to the queue
+- [x] `cardFlightRuntime.ts` — unified arc flight for hand→staging and staging→row
+- [x] Step types: `HAND_TO_STAGING`, `STAGING_TO_ROW`, `ROW_TAKE`, `STAGING_RETURN`, `OPPONENT_REVEAL`
+- [x] Phase guards — flush queue on `LOBBY` / new round; pause input during `RESOLVE`
+- [x] Debug overlay (dev-only) — `MotionQueueDebug.vue` shows step index / queue length
 
-**Review checkpoint:** Artificial 5-step script runs sequentially without overlap; reduced-motion completes instantly in order.
+**Review checkpoint:** Resolve plays run sequentially without overlap; reduced-motion completes instantly in order.
 
 ---
 
@@ -619,8 +621,8 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.8** — animation orchestrator (`useCardMotionQueue.ts`).
-2. Continue **6.9 → 6.12** in order.
+1. **M6.9** — resolve sequence animations (Rule B/C beats, row shake).
+2. Continue **6.10 → 6.12** in order.
 
 ---
 

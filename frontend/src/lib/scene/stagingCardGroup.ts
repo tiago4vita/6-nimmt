@@ -26,6 +26,7 @@ export interface StagingCardGroup {
   group: Group
   setOpacity: (opacity: number) => void
   setCardFace: (value: number, bones: number) => void
+  setShowBack: (showBack: boolean) => void
   dispose: () => void
 }
 
@@ -50,6 +51,7 @@ export function createStagingCardGroup(
   })
 
   const meshes: Mesh[] = []
+  let faceMesh: Mesh | null = null
 
   if (showBackOnly) {
     const back = new Mesh(cardPlane, backMaterial)
@@ -71,6 +73,7 @@ export function createStagingCardGroup(
 
     group.add(back, face)
     meshes.push(back, face)
+    faceMesh = face
   }
 
   function setOpacity(opacity: number): void {
@@ -93,6 +96,12 @@ export function createStagingCardGroup(
     faceMaterial.needsUpdate = true
   }
 
+  function setShowBack(showBack: boolean): void {
+    if (faceMesh) {
+      faceMesh.visible = !showBack
+    }
+  }
+
   function dispose(): void {
     if (!showBackOnly) {
       disposeCardFaceTexture(faceMaterial.map)
@@ -102,7 +111,7 @@ export function createStagingCardGroup(
     cardPlane.dispose()
   }
 
-  return { group, setOpacity, setCardFace, dispose }
+  return { group, setOpacity, setCardFace, setShowBack, dispose }
 }
 
 /** Hidden hit volume so flight cards match hand card bounds. */

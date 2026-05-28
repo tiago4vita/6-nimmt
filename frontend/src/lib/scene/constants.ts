@@ -45,12 +45,25 @@ export const HAND_MOTION = {
   selectedJiggleIntensity: 1.3,
 } as const
 
+/** Card flight — shared arc motion for hand→staging and staging→row. */
+export const CARD_MOTION = {
+  durationMs: 460,
+  arcHeight: 0.52,
+  /** Breath between sequential steps so each beat reads clearly. */
+  stepGapMs: 180,
+  /** Hold source orientation this fraction of flight before flipping (0–1). */
+  flipDelay: 0.67,
+  /** Opponent back → face reveal threshold during staging→row flight (0–1). */
+  faceRevealAt: 0.72,
+  reducedStepGapMs: 40,
+} as const
+
 /** Staging slots — shared bottom-right corner; cards rest face-normal toward world -Y. */
 export const STAGING = {
-  durationMs: 480,
-  arcHeight: 0.55,
+  durationMs: CARD_MOTION.durationMs,
+  arcHeight: CARD_MOTION.arcHeight,
   embed: 0.001,
-  opponentFadeDurationMs: 480,
+  opponentFadeDurationMs: CARD_MOTION.durationMs,
   /** Group rotation at rest — identity; staging mesh face normal is built toward world -Y. */
   rotation: [0, 0, 0] as [number, number, number],
   /** Bottom-right of playfield (near player, table right edge). */

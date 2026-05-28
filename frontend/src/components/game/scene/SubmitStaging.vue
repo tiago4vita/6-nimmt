@@ -40,9 +40,11 @@ watch(
         opponentStaging.setOpacity(opacity)
       })
       opponentStaging.setOpacity(0)
-    } else {
-      emit('register-opponent-opacity', null)
+      return
     }
+
+    emit('register-opponent-opacity', null)
+    opponentStaging.setOpacity(0)
   },
   { immediate: true },
 )

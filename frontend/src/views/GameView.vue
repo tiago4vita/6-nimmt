@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, toRef } from 'vue'
+import { computed, onUnmounted, ref, watch, toRef } from 'vue'
 import { useRouter } from 'vue-router'
 import AppShell from '@/components/layout/AppShell.vue'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog.vue'
@@ -15,9 +15,8 @@ import { isFinishedPhase } from '@/graphql/types'
 import { useCardSelection } from '@/composables/useCardSelection'
 import { useGameRoom } from '@/composables/useGameRoom'
 import { useGameShortcuts } from '@/composables/useGameShortcuts'
-import { useStagingFlight } from '@/composables/useStagingFlight'
+import { useGameMotion } from '@/composables/useGameMotion'
 import { useToast } from '@/composables/useToast'
-import { fanSlotStagingStart, findFanSlot } from '@/lib/scene/fanLayout'
 
 const props = defineProps<{
   roomId: string
@@ -50,6 +49,24 @@ const isLeaving = ref(false)
 const isRematching = ref(false)
 const showResults = ref(false)
 
+const RESULTS_OVERLAY_DELAY_MS = 2500
+let resultsOverlayHandle: number | null = null
+
+function clearResultsOverlayTimer(): void {
+  if (resultsOverlayHandle !== null) {
+    window.clearTimeout(resultsOverlayHandle)
+    resultsOverlayHandle = null
+  }
+}
+
+function scheduleResultsOverlay(): void {
+  clearResultsOverlayTimer()
+  resultsOverlayHandle = window.setTimeout(() => {
+    resultsOverlayHandle = null
+    showResults.value = true
+  }, RESULTS_OVERLAY_DELAY_MS)
+}
+
 const {
   selectedCardId,
   isHandLocked,
@@ -66,17 +83,32 @@ const {
   onSubmit: async (cardId) => submitCard(cardId),
 })
 
+const opponent = computed(() =>
+  players.value.find((player) => player.id !== myPlayerId.value) ?? null,
+)
+
+const opponentHasSubmitted = computed(() => opponent.value?.hasSubmitted ?? false)
+
 const {
   flyingCardId,
-  stagedYourCard,
-  opponentVisible,
+  stagingYourCard,
+  opponentStagingVisible,
+  displayRows,
+  activeResolveRowIndex,
+  isMotionActive,
   beginYourFlight,
-  cancelYourFlight,
-  resetStaging,
-  notifyOpponentSubmitted,
+  resetMotion,
   registerOpponentOpacity,
-} = useStagingFlight(() => {
-  /* staged card committed in composable */
+  motionDebug,
+} = useGameMotion({
+  phase,
+  roundNumber,
+  rows,
+  lastResolvedPlays,
+  myPlayerId,
+  myHand,
+  mySubmittedCard,
+  opponentHasSubmitted,
 })
 
 const selectedCard = computed(() => {
@@ -87,13 +119,7 @@ const selectedCard = computed(() => {
   return myHand.value.find((card) => card.id === id) ?? null
 })
 
-const opponent = computed(() =>
-  players.value.find((player) => player.id !== myPlayerId.value) ?? null,
-)
-
-const stagedCardDisplay = computed(
-  () => stagedYourCard.value ?? mySubmittedCard.value,
-)
+const stagedCardDisplay = computed(() => stagingYourCard.value)
 
 const hiddenHandCardIds = computed(() => {
   const ids: string[] = []
@@ -103,14 +129,21 @@ const hiddenHandCardIds = computed(() => {
   return ids
 })
 
+const handInteractionLocked = computed(
+  () => isHandLocked.value || isMotionActive.value,
+)
+
 const showConfirmOverlay = computed(
   () =>
     phase.value === 'SUBMIT' &&
     selectedCard.value !== null &&
-    mySubmittedCard.value === null,
+    mySubmittedCard.value === null &&
+    !handInteractionLocked.value,
 )
 
-const handFrozen = computed(() => isSubmitting.value)
+const handFrozen = computed(
+  () => isSubmitting.value || isMotionActive.value,
+)
 
 const shortcutHintCount = computed(() => Math.min(myHand.value.length, 9))
 
@@ -151,24 +184,16 @@ function handleDeadline(): void {
 
 async function handleConfirm(): Promise<void> {
   const card = selectedCard.value
-  if (!card || isHandLocked.value) {
+  if (!card || handInteractionLocked.value) {
     return
   }
 
-  const slot = findFanSlot(myHand.value, card.id)
-  if (slot) {
-    await beginYourFlight(card, fanSlotStagingStart(slot, true))
-  } else {
-    const failure = await submitSelectedCard()
-    if (failure) {
-      cancelYourFlight()
-    }
-    return
-  }
-
+  const flightPromise = beginYourFlight(card)
   const failure = await submitSelectedCard()
+  await flightPromise
+
   if (failure) {
-    cancelYourFlight()
+    resetMotion()
   }
 }
 
@@ -177,27 +202,6 @@ watch([phase, mySubmittedCard], ([nextPhase, submitted]) => {
     clearTimeoutMessage()
   }
 })
-
-watch(roundNumber, () => {
-  resetStaging()
-})
-
-watch(phase, (nextPhase) => {
-  if (nextPhase !== 'SUBMIT') {
-    resetStaging()
-  }
-})
-
-watch(
-  () => [phase.value, opponent.value?.hasSubmitted] as const,
-  ([currentPhase, submitted], previous) => {
-    const wasSubmitted = previous?.[1] ?? false
-    if (currentPhase === 'SUBMIT' && submitted && !wasSubmitted) {
-      notifyOpponentSubmitted()
-    }
-  },
-  { immediate: true },
-)
 
 const isSlowSubmit = ref(false)
 let slowSubmitHandle: number | null = null
@@ -223,7 +227,7 @@ const hasOpenDialog = computed(() => showLeaveConfirm.value || showResults.value
 
 useGameShortcuts({
   phase,
-  isHandLocked,
+  isHandLocked: handInteractionLocked,
   hasSelection,
   hasOpenDialog,
   selectByIndex: selectCardByIndex,
@@ -235,22 +239,41 @@ useGameShortcuts({
 })
 
 const highlightedRowIndex = computed(() => {
+  if (activeResolveRowIndex.value !== null) {
+    return activeResolveRowIndex.value
+  }
   const lastPlay = lastResolvedPlays.value.at(-1)
   return lastPlay?.rowIndex ?? null
 })
+
+const showPhaseOverlay = computed(() => !isMotionActive.value)
 
 watch(
   phase,
   (nextPhase) => {
     if (nextPhase === 'LOBBY') {
+      clearResultsOverlayTimer()
+      showResults.value = false
       void router.replace({ name: 'lobby', params: { roomId: props.roomId } })
+      return
     }
+
     if (nextPhase && isFinishedPhase(nextPhase)) {
-      showResults.value = true
+      if (!showResults.value) {
+        scheduleResultsOverlay()
+      }
+      return
     }
+
+    clearResultsOverlayTimer()
+    showResults.value = false
   },
   { immediate: true },
 )
+
+onUnmounted(() => {
+  clearResultsOverlayTimer()
+})
 
 watch(submitFailure, (failure) => {
   if (!failure) {
@@ -317,7 +340,11 @@ async function handleExitRoom(): Promise<void> {
       :is-reconnecting="isReconnecting && !isLoading"
       :is-slow-submit="isSlowSubmit"
     />
-    <GamePhaseOverlay :phase="phase" :timeout-message="timeoutMessage" />
+    <GamePhaseOverlay
+      v-if="showPhaseOverlay"
+      :phase="phase"
+      :timeout-message="timeoutMessage"
+    />
 
     <LoadingShell v-if="isLoading" variant="game" label="Loading game" />
 
@@ -337,16 +364,17 @@ async function handleExitRoom(): Promise<void> {
 
       <div class="crt-game relative h-[min(640px,65vh)] w-full">
         <GameScene
-          :rows="rows"
+          :rows="displayRows"
           :my-hand="myHand"
           :selected-card-id="selectedCardId"
           :submitted-card-id="mySubmittedCard?.id ?? null"
           :hidden-hand-card-ids="hiddenHandCardIds"
-          :hand-disabled="isHandLocked || phase !== 'SUBMIT'"
+          :hand-disabled="handInteractionLocked || phase !== 'SUBMIT'"
           :hand-frozen="handFrozen"
           :highlighted-row-index="highlightedRowIndex"
           :staged-your-card="stagedCardDisplay"
-          :opponent-staging-visible="opponentVisible"
+          :opponent-staging-visible="opponentStagingVisible"
+          :motion-debug="motionDebug"
           @register-opponent-opacity="registerOpponentOpacity"
           @select="selectCard"
         />

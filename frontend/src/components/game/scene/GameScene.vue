@@ -21,6 +21,8 @@ import HandFan from '@/components/game/scene/HandFan.vue'
 import RowTrack from '@/components/game/scene/RowTrack.vue'
 import StagingFlightMesh from '@/components/game/scene/StagingFlightMesh.vue'
 import SubmitStaging from '@/components/game/scene/SubmitStaging.vue'
+import MotionQueueDebug from '@/components/game/scene/MotionQueueDebug.vue'
+import type { CardMotionQueueDebug } from '@/composables/useCardMotionQueue'
 
 const props = defineProps<{
   rows: Row[]
@@ -33,6 +35,7 @@ const props = defineProps<{
   highlightedRowIndex: number | null
   stagedYourCard: Card | null
   opponentStagingVisible: boolean
+  motionDebug?: CardMotionQueueDebug
 }>()
 
 const emit = defineEmits<{
@@ -115,6 +118,7 @@ const [playfieldX, , playfieldZ] = playfieldCenter()
         @select="emit('select', $event)"
       />
     </TresCanvas>
+    <MotionQueueDebug v-if="props.motionDebug" :debug="props.motionDebug" />
     <SceneAxisLegend />
   </div>
 </template>
