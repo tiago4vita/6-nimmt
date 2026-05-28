@@ -16,6 +16,7 @@ import {
   setOverlayRowCards,
 } from '@/lib/scene/resolveLayout'
 import { rowSlotTransform, stagingSlotTransform } from '@/lib/scene/stagingLayout'
+import type { CardTransform } from '@/lib/scene/stagingLayout'
 
 function resolvePlaysKey(plays: ResolvedPlay[]): string {
   return plays.map((play) => play.card.id).join(',')
@@ -37,6 +38,7 @@ export function useGameMotion(options: {
   mySubmittedCard: ComputedRef<Card | null>
   opponentHasSubmitted: ComputedRef<boolean>
   onResolveToast?: (message: string) => void
+  onBonePop?: (playerId: string, bonesTaken: number) => void
 }): {
   flyingCardId: Ref<string | null>
   stagingYourCard: ComputedRef<Card | null>
@@ -80,6 +82,9 @@ export function useGameMotion(options: {
     },
     onResolveToast: (message) => {
       options.onResolveToast?.(message)
+    },
+    onBonePop: (playerId, bonesTaken) => {
+      options.onBonePop?.(playerId, bonesTaken)
     },
   })
 
@@ -178,6 +183,46 @@ export function useGameMotion(options: {
     }
   }
 
+  function buildBonePopStep(
+    play: ResolvedPlay,
+    staging: CardTransform,
+  ): CardMotionStep | null {
+    if (play.bonesTaken <= 0) {
+      return null
+    }
+
+    return {
+      type: 'BONE_POP',
+      cardId: `${play.card.id}-bones`,
+      card: play.card,
+      from: staging,
+      to: staging,
+      rowIndex: play.rowIndex,
+      playerId: play.playerId,
+      bonesTaken: play.bonesTaken,
+    }
+  }
+
+  function appendBonePopAndCollect(
+    steps: CardMotionStep[],
+    play: ResolvedPlay,
+    preRow: Row | undefined,
+    rowIndex: number,
+    staging: CardTransform,
+    myPlayerId: string | null,
+  ): void {
+    const pop = buildBonePopStep(play, staging)
+    if (pop) {
+      steps.push(pop)
+    }
+
+    if (preRow) {
+      steps.push(
+        ...buildRowCollectSteps(play, preRow.cards, rowIndex, myPlayerId),
+      )
+    }
+  }
+
   function buildRowCollectSteps(
     play: ResolvedPlay,
     cards: Card[],
@@ -241,8 +286,13 @@ export function useGameMotion(options: {
         })
 
         if (preRow) {
-          steps.push(
-            ...buildRowCollectSteps(play, preRow.cards, rowIndex, myPlayerId),
+          appendBonePopAndCollect(
+            steps,
+            play,
+            preRow,
+            rowIndex,
+            staging,
+            myPlayerId,
           )
         }
 
@@ -288,8 +338,13 @@ export function useGameMotion(options: {
           rowIndex: play.rowIndex,
           pauseMs: RESOLVE_MOTION.rowShakeMs,
         })
-        steps.push(
-          ...buildRowCollectSteps(play, preRow.cards, rowIndex, myPlayerId),
+        appendBonePopAndCollect(
+          steps,
+          play,
+          preRow,
+          rowIndex,
+          staging,
+          myPlayerId,
         )
         steps.push({
           type: 'ROW_REPOSITION',

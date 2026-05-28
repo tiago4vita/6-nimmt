@@ -19,6 +19,7 @@ export type CardMotionStepType =
   | 'ROW_SHAKE'
   | 'RESOLVE_BEAT'
   | 'SHOW_TOAST'
+  | 'BONE_POP'
   | 'STAGING_RETURN'
   | 'OPPONENT_REVEAL'
 
@@ -34,6 +35,7 @@ export interface CardMotionStep {
   pauseMs?: number
   message?: string
   playerId?: string
+  bonesTaken?: number
 }
 
 interface QueuedStep extends CardMotionStep {
@@ -44,6 +46,7 @@ export interface CardMotionQueueCallbacks {
   onOpponentOpacity?: (opacity: number) => void
   onRowShake?: (rowIndex: number | null) => void
   onResolveToast?: (message: string) => void
+  onBonePop?: (playerId: string, bonesTaken: number) => void
 }
 
 export interface CardMotionQueueDebug {
@@ -218,6 +221,11 @@ export function useCardMotionQueue(callbacks: CardMotionQueueCallbacks = {}): {
           callbacks.onResolveToast?.(step.message)
         }
         await sleep(step.pauseMs ?? 120, gen)
+        break
+      case 'BONE_POP':
+        if (step.playerId && step.bonesTaken && step.bonesTaken > 0) {
+          callbacks.onBonePop?.(step.playerId, step.bonesTaken)
+        }
         break
       default:
         break

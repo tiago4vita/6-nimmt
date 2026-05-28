@@ -514,14 +514,14 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.10 — Bone pop feedback
+### 6.10 — Bone pop feedback *(complete)*
 
 **Deliverable:** When a player gains bones, a big **+N 🦴** pops center-screen with player-colored glow.
 
-- `BonePop.vue` HTML overlay (not Three.js text — sharper at CRT scale)
-- Trigger on each resolve step where `bonesTaken > 0`
-- Player tint — map `playerId` → shadow color (you vs opponent palette)
-- Animation — scale 0.6→1.1→1, fade out ~900ms; stack if multiple in sequence (offset Y)
+- [x] `BonePop.vue` HTML overlay (not Three.js text — sharper at CRT scale)
+- [x] Trigger on each resolve step where `bonesTaken > 0`
+- [x] Player tint — map `playerId` → shadow color (you vs opponent palette)
+- [x] Animation — scale 0.6→1.1→1, fade out ~900ms; stack if multiple in sequence (offset Y)
 
 **Review checkpoint:** Taking a row with 12+ bones feels impactful; zero-bone steps stay silent.
 
@@ -621,8 +621,8 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.10** — bone pop feedback (`+N 🦴` overlay on bonesTaken steps).
-2. Continue **6.11 → 6.12** in order.
+1. **M6.11** — bone-tier card materials (emissive / shimmer by `bones` value).
+2. Continue **6.12** in order.
 
 ---
 
