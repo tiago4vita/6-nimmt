@@ -33,6 +33,7 @@ const props = defineProps<{
   handDisabled: boolean
   handFrozen: boolean
   highlightedRowIndex: number | null
+  shakingRowIndex: number | null
   stagedYourCard: Card | null
   opponentStagingVisible: boolean
   motionDebug?: CardMotionQueueDebug
@@ -97,6 +98,7 @@ const [playfieldX, , playfieldZ] = playfieldCenter()
       <RowTrack
         :rows="props.rows"
         :highlighted-row-index="props.highlightedRowIndex"
+        :shaking-row-index="props.shakingRowIndex"
         :highlight-color="colors.accentWarm"
       />
 

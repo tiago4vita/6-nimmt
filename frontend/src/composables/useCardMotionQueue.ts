@@ -1,4 +1,5 @@
 import { onBeforeUnmount, ref, type Ref } from 'vue'
+import { useMediaQuery } from '@vueuse/core'
 
 import type { Card } from '@/graphql/types'
 import {
@@ -6,13 +7,18 @@ import {
   cancelCardFlight,
   DEFAULT_FLIGHT_DURATION_MS,
 } from '@/lib/scene/cardFlightRuntime'
-import { CARD_MOTION } from '@/lib/scene/constants'
+import { CARD_MOTION, RESOLVE_MOTION } from '@/lib/scene/constants'
+
 import type { CardTransform } from '@/lib/scene/stagingLayout'
 
 export type CardMotionStepType =
   | 'HAND_TO_STAGING'
   | 'STAGING_TO_ROW'
-  | 'ROW_TAKE'
+  | 'ROW_COLLECT'
+  | 'ROW_REPOSITION'
+  | 'ROW_SHAKE'
+  | 'RESOLVE_BEAT'
+  | 'SHOW_TOAST'
   | 'STAGING_RETURN'
   | 'OPPONENT_REVEAL'
 
@@ -26,10 +32,18 @@ export interface CardMotionStep {
   showBack?: boolean
   rowIndex?: number | null
   pauseMs?: number
+  message?: string
+  playerId?: string
 }
 
 interface QueuedStep extends CardMotionStep {
   resolve: () => void
+}
+
+export interface CardMotionQueueCallbacks {
+  onOpponentOpacity?: (opacity: number) => void
+  onRowShake?: (rowIndex: number | null) => void
+  onResolveToast?: (message: string) => void
 }
 
 export interface CardMotionQueueDebug {
@@ -39,15 +53,15 @@ export interface CardMotionQueueDebug {
   isAnimating: Ref<boolean>
 }
 
-export function useCardMotionQueue(
-  onOpponentOpacity?: (opacity: number) => void,
-): {
+export function useCardMotionQueue(callbacks: CardMotionQueueCallbacks = {}): {
   enqueue: (step: CardMotionStep) => Promise<void>
   enqueueMany: (steps: CardMotionStep[]) => Promise<void>
   flush: () => void
   flyingCardId: Ref<string | null>
   debug: CardMotionQueueDebug
 } {
+  const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
+
   const queue: QueuedStep[] = []
   const flyingCardId = ref<string | null>(null)
   const currentStep = ref<CardMotionStep | null>(null)
@@ -61,6 +75,25 @@ export function useCardMotionQueue(
   let opponentRafId = 0
   let opponentFadeStart = 0
   let opponentRevealResolve: (() => void) | null = null
+
+  function stepGapMs(): number {
+    return reducedMotion.value
+      ? CARD_MOTION.reducedStepGapMs
+      : CARD_MOTION.stepGapMs
+  }
+
+  function isCollectOrReposition(type: CardMotionStepType): boolean {
+    return type === 'ROW_COLLECT' || type === 'ROW_REPOSITION'
+  }
+
+  function gapAfterStep(step: CardMotionStep, nextStep: CardMotionStep): number {
+    if (isCollectOrReposition(step.type) && isCollectOrReposition(nextStep.type)) {
+      return reducedMotion.value
+        ? CARD_MOTION.reducedStepGapMs
+        : RESOLVE_MOTION.collectStepGapMs
+    }
+    return stepGapMs()
+  }
 
   function updateQueueLength(): void {
     queueLength.value = queue.length + (currentStep.value ? 1 : 0)
@@ -79,16 +112,18 @@ export function useCardMotionQueue(
   function abortActiveStep(): void {
     cancelCardFlight()
     finishOpponentReveal()
+    callbacks.onRowShake?.(null)
     flyingCardId.value = null
   }
 
   function sleep(ms: number, gen: number): Promise<void> {
+    const duration = reducedMotion.value ? Math.min(ms, 60) : ms
     return new Promise((resolve) => {
       window.setTimeout(() => {
         if (gen === generation) {
           resolve()
         }
-      }, ms)
+      }, duration)
     })
   }
 
@@ -100,7 +135,9 @@ export function useCardMotionQueue(
       }
 
       flyingCardId.value = step.cardId
-      const duration = step.durationMs ?? DEFAULT_FLIGHT_DURATION_MS
+      const duration = reducedMotion.value
+        ? Math.min(step.durationMs ?? DEFAULT_FLIGHT_DURATION_MS, 80)
+        : (step.durationMs ?? DEFAULT_FLIGHT_DURATION_MS)
 
       animateCardFlight(
         step.card,
@@ -127,9 +164,11 @@ export function useCardMotionQueue(
 
       finishOpponentReveal()
       opponentRevealResolve = resolve
-      onOpponentOpacity?.(0)
+      callbacks.onOpponentOpacity?.(0)
       opponentFadeStart = performance.now()
-      const duration = step.durationMs ?? DEFAULT_FLIGHT_DURATION_MS
+      const duration = reducedMotion.value
+        ? 60
+        : (step.durationMs ?? DEFAULT_FLIGHT_DURATION_MS)
 
       function tick(now: number): void {
         if (gen !== generation) {
@@ -139,14 +178,14 @@ export function useCardMotionQueue(
 
         const linearT = Math.min(1, (now - opponentFadeStart) / duration)
         const eased = 1 - (1 - linearT) ** 2
-        onOpponentOpacity?.(eased)
+        callbacks.onOpponentOpacity?.(eased)
         if (linearT < 1) {
           opponentRafId = requestAnimationFrame(tick)
           return
         }
 
         opponentRafId = 0
-        onOpponentOpacity?.(1)
+        callbacks.onOpponentOpacity?.(1)
         finishOpponentReveal()
       }
 
@@ -159,13 +198,26 @@ export function useCardMotionQueue(
       case 'HAND_TO_STAGING':
       case 'STAGING_TO_ROW':
       case 'STAGING_RETURN':
+      case 'ROW_COLLECT':
+      case 'ROW_REPOSITION':
         await runFlight(step, gen)
         break
       case 'OPPONENT_REVEAL':
         await runOpponentReveal(step, gen)
         break
-      case 'ROW_TAKE':
+      case 'ROW_SHAKE':
+        callbacks.onRowShake?.(step.rowIndex ?? null)
         await sleep(step.pauseMs ?? 420, gen)
+        callbacks.onRowShake?.(null)
+        break
+      case 'RESOLVE_BEAT':
+        await sleep(step.pauseMs ?? 360, gen)
+        break
+      case 'SHOW_TOAST':
+        if (step.message) {
+          callbacks.onResolveToast?.(step.message)
+        }
+        await sleep(step.pauseMs ?? 120, gen)
         break
       default:
         break
@@ -197,7 +249,7 @@ export function useCardMotionQueue(
         next.resolve()
 
         if (queue.length > 0 && !cancelled && gen === generation) {
-          await sleep(CARD_MOTION.stepGapMs, gen)
+          await sleep(gapAfterStep(next, queue[0]!), gen)
         }
       }
     } finally {
@@ -229,7 +281,7 @@ export function useCardMotionQueue(
     generation += 1
     cancelled = true
     abortActiveStep()
-    onOpponentOpacity?.(0)
+    callbacks.onOpponentOpacity?.(0)
 
     while (queue.length > 0) {
       const step = queue.shift()!

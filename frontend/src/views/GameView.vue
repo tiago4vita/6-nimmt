@@ -95,6 +95,7 @@ const {
   opponentStagingVisible,
   displayRows,
   activeResolveRowIndex,
+  shakingRowIndex,
   isMotionActive,
   beginYourFlight,
   resetMotion,
@@ -109,6 +110,9 @@ const {
   myHand,
   mySubmittedCard,
   opponentHasSubmitted,
+  onResolveToast: (message) => {
+    pushToast({ message, variant: 'info' })
+  },
 })
 
 const selectedCard = computed(() => {
@@ -372,6 +376,7 @@ async function handleExitRoom(): Promise<void> {
           :hand-disabled="handInteractionLocked || phase !== 'SUBMIT'"
           :hand-frozen="handFrozen"
           :highlighted-row-index="highlightedRowIndex"
+          :shaking-row-index="shakingRowIndex"
           :staged-your-card="stagedCardDisplay"
           :opponent-staging-visible="opponentStagingVisible"
           :motion-debug="motionDebug"

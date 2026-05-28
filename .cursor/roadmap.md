@@ -500,15 +500,15 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.9 — Resolve sequence animations
+### 6.9 — Resolve sequence animations *(complete)*
 
 **Deliverable:** Resolve reads like a tutorial — staging → row placement → row penalty — one beat at a time.
 
-- On `phase === RESOLVE'`, consume `lastResolvedPlays` in sort order (already ascending on server)
-- Per play: move staging card → target row slot (Rule A placement position)
-- Rule B — pause, shake row, collect 5 cards to player bone pile zone, played card starts row
-- Rule C — pause, toast copy, collect chosen row, then place card
-- Stagger ~350–500ms between plays; row highlight synced to active play
+- [x] On `lastResolvedPlays` update, consume plays in ascending server order
+- [x] Per play: staging card → target row slot (Rule A placement index)
+- [x] Rule B — beat pause, row shake, collect 5 cards to player bone pile, played card recenters as new row
+- [x] Rule C — toast copy, beat pause, row shake, collect chosen row, then place card
+- [x] Stagger ~400ms between steps; row highlight synced to active play
 
 **Review checkpoint:** Record a round with mixed rules; viewer can narrate what happened from motion alone.
 
@@ -621,8 +621,8 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.9** — resolve sequence animations (Rule B/C beats, row shake).
-2. Continue **6.10 → 6.12** in order.
+1. **M6.10** — bone pop feedback (`+N 🦴` overlay on bonesTaken steps).
+2. Continue **6.11 → 6.12** in order.
 
 ---
 
