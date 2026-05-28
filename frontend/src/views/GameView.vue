@@ -420,6 +420,8 @@ async function handleExitRoom(): Promise<void> {
       :open="showResults"
       :players="players"
       :winner-ids="room?.winnerIds ?? null"
+      :finish-reason="room?.finishReason ?? null"
+      :forfeited-player-ids="room?.forfeitedPlayerIds ?? null"
       :is-rematching="isRematching"
       :is-leaving="isLeaving"
       @rematch="handleRematch"

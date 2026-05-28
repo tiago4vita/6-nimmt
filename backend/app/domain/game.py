@@ -24,6 +24,15 @@ class GamePhase(str, Enum):
     FINISHED = "FINISHED"
 
 
+class GameFinishReason(str, Enum):
+    NORMAL = "NORMAL"
+    WALKOVER_LEAVE = "WALKOVER_LEAVE"
+    WALKOVER_AFK = "WALKOVER_AFK"
+
+
+AFK_FORFEIT_ROUNDS = 3
+
+
 DEAL_TABLE: dict[int, tuple[int, int]] = {
     2: (10, 10),
     3: (9, 9),

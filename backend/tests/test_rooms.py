@@ -105,7 +105,9 @@ async def test_leave_last_player_deletes_room(redis_client: Redis) -> None:
     assert await rooms.get_room_by_code(host_room.code) is None
 
 
-async def test_leave_room_in_active_marks_disconnected(redis_client: Redis) -> None:
+async def test_leave_room_in_active_finishes_walkover(redis_client: Redis) -> None:
+    from app.domain.game import GameFinishReason
+
     host_room = await rooms.create_room(guest_id="host", display_name="Host")
     await rooms.join_room(code=host_room.code, guest_id="g2", display_name="Bob")
 
@@ -118,9 +120,14 @@ async def test_leave_room_in_active_marks_disconnected(redis_client: Redis) -> N
     result = await rooms.leave_room(room_id=host_room.id, guest_id="g2")
 
     assert result is not None
-    assert result.phase == GamePhase.SUBMIT
+    assert result.phase == GamePhase.FINISHED
+    assert result.finish_reason == GameFinishReason.WALKOVER_LEAVE
     bob = result.player_by_guest_id("g2")
     assert bob is not None
+    assert result.forfeited_player_ids == [bob.id]
+    host = result.player_by_guest_id("host")
+    assert host is not None
+    assert result.winner_ids == [host.id]
     assert bob.is_connected is False
 
 

@@ -1,5 +1,7 @@
 export type GamePhase = 'LOBBY' | 'DEAL' | 'SUBMIT' | 'RESOLVE' | 'SCORE' | 'FINISHED'
 
+export type GameFinishReason = 'NORMAL' | 'WALKOVER_LEAVE' | 'WALKOVER_AFK'
+
 export type GameErrorCode =
   | 'UNAUTHENTICATED'
   | 'ROOM_NOT_FOUND'
@@ -51,6 +53,8 @@ export interface GameRoomPublic {
   submitDeadline: string | null
   submitTimeoutSeconds: number
   winnerIds: string[] | null
+  finishReason: GameFinishReason | null
+  forfeitedPlayerIds: string[] | null
   updatedAt: string
 }
 

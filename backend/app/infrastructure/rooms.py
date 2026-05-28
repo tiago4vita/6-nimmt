@@ -329,6 +329,10 @@ async def leave_room(
             return room
 
         player.is_connected = False
+        from app.infrastructure import game as game_service
+
+        game_service.finish_walkover_on_leave(room, player.id)
+        await redis.delete(redis_keys.guest_current_room_key(guest_id))
         await save_room(room, client=client)
         await _publish_room(room)
         return room

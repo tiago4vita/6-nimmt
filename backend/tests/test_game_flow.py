@@ -181,6 +181,8 @@ async def test_return_to_lobby_from_finished(redis_client: Redis) -> None:
     assert reset.phase == GamePhase.LOBBY
     assert reset.round_number == 0
     assert reset.winner_ids is None
+    assert reset.finish_reason is None
+    assert reset.forfeited_player_ids is None
     assert reset.rows == []
     for player in reset.players:
         assert player.hand == []
