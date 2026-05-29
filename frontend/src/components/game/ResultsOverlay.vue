@@ -105,6 +105,24 @@ const rankedPlayers = computed((): RankedPlayer[] => {
 
   return ranked
 })
+
+function winnerHighlightClass(isWinner: boolean): string {
+  if (!isWinner) {
+    return 'border-border bg-surface'
+  }
+  if (isTie.value) {
+    return 'border-victory-gold/50 border-l-4 border-l-victory-gold bg-victory-gold/10'
+  }
+  return 'border-accent/50 border-l-4 border-l-accent bg-accent/10'
+}
+
+const headerAccentClass = computed(() =>
+  isTie.value ? 'text-victory-gold' : 'text-accent',
+)
+
+const winnerIconClass = computed(() =>
+  isTie.value ? 'text-victory-gold' : 'text-accent',
+)
 </script>
 
 <template>
@@ -118,7 +136,7 @@ const rankedPlayers = computed((): RankedPlayer[] => {
     <div
       class="w-full max-w-lg rounded-2xl border border-border bg-surface-raised p-6 shadow-2xl"
     >
-      <div class="flex items-center gap-2 text-accent">
+      <div class="flex items-center gap-2" :class="headerAccentClass">
         <Trophy class="size-5" aria-hidden="true" />
         <h2 class="text-xl font-semibold text-text">
           {{ heading }}
@@ -134,16 +152,13 @@ const rankedPlayers = computed((): RankedPlayer[] => {
           v-for="{ player, rank, isWinner } in rankedPlayers"
           :key="player.id"
           class="flex items-center justify-between rounded-md border px-3 py-2"
-          :class="
-            isWinner
-              ? 'border-accent/50 border-l-4 border-l-accent bg-accent/10'
-              : 'border-border bg-surface'
-          "
+          :class="winnerHighlightClass(isWinner)"
         >
           <span class="flex items-center gap-2 text-sm text-text">
             <Trophy
               v-if="isWinner"
-              class="size-4 shrink-0 text-accent"
+              class="size-4 shrink-0"
+              :class="winnerIconClass"
               aria-hidden="true"
             />
             <span>#{{ rank }} {{ player.displayName }}</span>

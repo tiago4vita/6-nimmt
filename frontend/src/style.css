@@ -13,6 +13,7 @@
   --color-accent-warm: #e85d04;
   --color-danger: #ef4444;
   --color-success: #4caf50;
+  --color-victory-gold: #ca8a04;
   --color-card-back: #4a4a4a;
   --color-card-edge: #3a3a3a;
   --color-card-face-text: #ffffff;
@@ -46,6 +47,7 @@
   --color-accent-warm: var(--color-accent-warm);
   --color-danger: var(--color-danger);
   --color-success: var(--color-success);
+  --color-victory-gold: var(--color-victory-gold);
   --color-card-back: var(--color-card-back);
   --color-card-edge: var(--color-card-edge);
   --color-card-face-text: var(--color-card-face-text);
