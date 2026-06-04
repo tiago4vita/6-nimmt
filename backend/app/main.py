@@ -28,10 +28,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="6 Nimmt API",
+    title="BARE BONES API",
     version="0.1.0",
     description=(
-        "FastAPI + Strawberry GraphQL backend for the 6 nimmt! card game. "
+        "FastAPI + Strawberry GraphQL backend for BARE BONES "
+        "(inspired by the 6 nimmt! / Take 6 card game). "
         "See `/openapi.yaml` or `/docs` for the full API reference."
     ),
     docs_url="/docs",

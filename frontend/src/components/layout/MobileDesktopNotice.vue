@@ -10,7 +10,7 @@ import { Monitor } from 'lucide-vue-next'
     <div class="mx-auto flex max-w-6xl items-center gap-2">
       <Monitor class="size-4 shrink-0 text-accent" aria-hidden="true" />
       <p>
-        6 Nimmt is designed for desktop. You can browse, but gameplay works best on a larger
+        BARE BONES is designed for desktop. You can browse, but gameplay works best on a larger
         screen.
       </p>
     </div>

@@ -31,7 +31,7 @@ flowchart TB
 |---|---|---|
 | Frontend | `frontend/src/` | Lobby, game UI, guest session persistence, GraphQL client |
 | GraphQL API | `backend/app/graphql/` *(M3 — complete)* | Schema, resolvers, subscriptions, public/private view builders |
-| Domain | `backend/app/domain/` *(M1 — complete)* | Pure 6 Nimmt rules — no I/O |
+| Domain | `backend/app/domain/` *(M1 — complete)* | Pure BARE BONES / Take 6 rules — no I/O |
 | Infrastructure | `backend/app/infrastructure/` *(M2 — complete)* | Redis sessions/rooms/game loop, pub/sub, timers, guest auth |
 | Config / entry | `backend/app/config.py`, `main.py` | Settings, CORS, FastAPI lifespan, GraphQL router + WS context |
 

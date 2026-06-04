@@ -1,6 +1,6 @@
 # Frontend Design
 
-Single source of truth for **screen-level UX**, visual language, motion, and accessibility decisions for the 6-Nimmt Vue 3 SPA. Implementation conventions live in [frontend-patterns.md](./frontend-patterns.md); tooling lives in [frontend-stack.md](./frontend-stack.md).
+Single source of truth for **screen-level UX**, visual language, motion, and accessibility decisions for the BARE BONES Vue 3 SPA. Implementation conventions live in [frontend-patterns.md](./frontend-patterns.md); tooling lives in [frontend-stack.md](./frontend-stack.md).
 
 ## Locked Design Decisions
 
@@ -118,7 +118,7 @@ Zero-friction entry: create or join a room without an account.
 
 ```
 ┌─────────────────────────────────────┐
-│  6 Nimmt          [🔊]              │
+│  BARE BONES       [🔊]              │
 │                                     │
 │     ┌─────────────────────────┐     │
 │     │  Your name              │     │
@@ -138,7 +138,7 @@ Zero-friction entry: create or join a room without an account.
 - **Layout:** centered column, `max-w-md`.
 - **Reactive:** `ensureGuestSession` boot spinner → skeleton name field; inline validation on empty name or invalid 6-char code.
 - **Micro-delights:** Create button amber glow on hover; room-code inputs auto-advance focus on keystroke; successful join fades into Lobby (150ms).
-- **Mobile:** Full-width `MobileDesktopNotice` banner: *"6 Nimmt is designed for desktop. You can browse, but gameplay works best on a larger screen."*
+- **Mobile:** Full-width `MobileDesktopNotice` banner: *"BARE BONES is designed for desktop. You can browse, but gameplay works best on a larger screen."*
 
 ### 2. LobbyView — `/room/:roomId/lobby`
 

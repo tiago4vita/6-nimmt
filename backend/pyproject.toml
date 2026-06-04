@@ -1,7 +1,8 @@
 [project]
 name = "nimmt-backend"
 version = "0.1.0"
-description = "6 Nimmt backend — FastAPI + Strawberry GraphQL"
+description = "BARE BONES backend — FastAPI + Strawberry GraphQL"
+authors = [{ name = "Tiago Vita" }]
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",

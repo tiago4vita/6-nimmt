@@ -10,7 +10,7 @@ import ToastHost from '@/components/feedback/ToastHost.vue'
     <header class="border-b border-border bg-surface-raised/80 backdrop-blur">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <RouterLink to="/" class="text-lg font-semibold tracking-tight text-text">
-          6 Nimmt
+          BARE BONES
         </RouterLink>
         <SfxToggle />
       </div>
