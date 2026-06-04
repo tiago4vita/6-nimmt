@@ -6,10 +6,11 @@ Single source of truth for **screen-level UX**, visual language, motion, and acc
 
 | Area | Choice |
 |---|---|
-| Theme | **Dark-first** — moody table-top, vibrant card faces |
+| Theme | **Light-first (Wii / Xbox 360)** — off-white surfaces, cyan accent, subtle CRT scanlines |
+| Player scope | **2-player showcase** — 1v1 duels only until multi-player visuals scale (M6.14) |
+| Board | **TresJS/Three.js 3D table** — tilted camera, flat cards on felt; 2D `CardTile` kept for rules/HUD |
 | Responsive | **Desktop-first** — mobile shows a "best on larger screen" notice |
-| Motion | **Moderate** — hover lift, staggered resolve, progress pulse |
-| Board layout | **Vertical stack** — 4 horizontal rows |
+| Motion | **Moderate** — hover lift, staged resolve, progress pulse; `@tweenjs/tween.js` for 3D hand |
 | End-of-game | **Overlay on GameView** (primary); `/results` deep-link alias |
 | Icons | **Lucide Vue** (`lucide-vue-next`) |
 | Audio | **Optional SFX**, muted by default |
@@ -20,17 +21,20 @@ Single source of truth for **screen-level UX**, visual language, motion, and acc
 
 ```css
 :root {
-  --color-surface: #0c0c0f;        /* App background — near-black */
-  --color-surface-raised: #16161a; /* Panels, player strip */
-  --color-felt: #1a2e1a;           /* Subtle green tint behind board */
-  --color-border: #2a2a32;
-  --color-text: #f4f4f5;
-  --color-muted: #a1a1aa;
-  --color-accent: #d4a017;         /* Amber — table lamp / CTA accent */
-  --color-danger: #ef4444;         /* Penalties, errors */
-  --color-success: #22c55e;        /* Submitted, connected */
+  --color-surface: #f2f0eb;        /* App background — warm off-white */
+  --color-surface-raised: #ffffff; /* Panels, player strip */
+  --color-felt: #fafafa;           /* 3D table / canvas backdrop */
+  --color-border: #d4d0c8;
+  --color-text: #2a2a2a;
+  --color-muted: #6b6b6b;
+  --color-accent: #0099cc;         /* Cyan — Wii-style CTA accent */
+  --color-accent-warm: #e85d04;    /* Resolve highlights, urgent timer */
+  --color-danger: #ef4444;
+  --color-success: #4caf50;
 }
 ```
+
+**CRT treatment:** `.crt-game` viewport wrapper + global `#app::before` scanline overlay (`mix-blend-mode: multiply`) for a low-res console feel without harming readability.
 
 Typography: **Inter** (via `@fontsource/inter`) for headings and HUD; tabular numerals (`font-variant-numeric: tabular-nums`) for card values and scores so digits don't jitter on score animations.
 
@@ -38,7 +42,7 @@ In-game HUD uses at most **two font sizes** to preserve a calm reading hierarchy
 
 ### Card Chroma (Vibrant, Value-Driven)
 
-Card faces stay readable on dark felt via **hue bands** (predictable by value) and **bone intensity** (severity cue):
+Card faces stay readable on the light table via **hue bands** (predictable by value) and **bone intensity** (severity cue). Same chroma rules apply to 2D `CardTile` and 3D `CardMesh` face materials.
 
 | Card range | Face hue | Tailwind sketch |
 |---|---|---|
@@ -138,18 +142,17 @@ Zero-friction entry: create or join a room without an account.
 
 ### 2. LobbyView — `/room/:roomId/lobby`
 
-Social waiting room; host starts the game.
+1v1 duel waiting room; host starts when both players are seated.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
 │ [←]        Room AB12CD    [Copy link]  [Copy code]         │
 ├──────────────────────────────┬─────────────────────────────┤
-│  Players (4/10)              │  Waiting for host…          │
+│  Duelists (2/2)              │  Ready to duel?             │
 │  ● Alice  (host)             │                             │
 │  ● You                       │  Turn timer  [====●===] 30s │
-│  ○ Bob    (away)             │  (host slider: 3–60s)       │
-│  [ Edit name ]               │  Min 2 players to start     │
-│                              │  [ Start game ] (host only) │
+│  [ Edit name ]               │  (host slider: 3–60s)       │
+│                              │  [ Start duel ] (host only) │
 │                              │  or "Host will start…"      │
 └──────────────────────────────┴─────────────────────────────┘
 ```
@@ -157,11 +160,12 @@ Social waiting room; host starts the game.
 - **Layout:** two-column on `lg+`, single column fallback.
 - **Reactive:** `myGameViewUpdated` drives player list, `isConnected` dots, host badge; phase auto-navigates to `/play` once `phase >= SUBMIT`.
 - **Turn timer:** Host adjusts `submitTimeoutSeconds` (3–60, default 30) via range slider; synced to all lobby clients via subscription. Guests see read-only “Turn timer: Ns per round”.
-- **Micro-delights:** Copy code swaps the icon to Lucide `Check` + toast "Copied"; new player joins slide into the list (150ms); host's `Start game` button gains an amber pulse once at least 2 players are connected.
+- **Micro-delights:** Copy code swaps the icon to Lucide `Check` + toast "Copied"; opponent joins slide into the list (150ms); host's `Start duel` button gains a cyan pulse once both duelists are connected.
+- **Capacity:** `SHOWCASE_MAX_PLAYERS = 2` — third join attempt returns `ROOM_FULL`.
 
 ### 3. GameView — `/room/:roomId/play`
 
-The core experience. Desktop-first vertical board.
+The core experience. **3D table scene** inside `.crt-game` viewport; HUD and confirm bar remain HTML overlays for accessibility.
 
 ```
 ┌────────────────────────────────────────────────────────────┐
@@ -169,20 +173,15 @@ The core experience. Desktop-first vertical board.
 ├────────────────────────────────────────────────────────────┤
 │  PlayerStrip: names · bones · submit highlight on cards  │
 ├────────────────────────────────────────────────────────────┤
-│        ┌─ felt surface ──────────────────────────┐         │
-│  Row 1 │ [12][19][24][31][38]                    │         │
-│  Row 2 │ [7][15]                                 │         │
-│  Row 3 │ [44][51][58]                            │         │
-│  Row 4 │ [3][9]                                  │         │
-│        └─────────────────────────────────────────┘         │
+│        ┌─ .crt-game / GameScene (TresCanvas) ──────┐         │
+│        │  (3D table — rows, hand fan, animations)  │         │
+│        └───────────────────────────────────────────┘         │
 ├────────────────────────────────────────────────────────────┤
-│  Your hand (sorted ascending)                              │
-│  [23] [47] [62] [88] [91] [97]   ← click select, then confirm │
-│  [ Play card 47 ]  [ Cancel ]                              │
+│  CardConfirmBar (HTML overlay — select → confirm)          │
 └────────────────────────────────────────────────────────────┘
 ```
 
-- **Interaction model:** **Select → confirm.** Click selects (amber ring); confirm bar shows preview + “Play card N”. Hand locks while the mutation resolves (optimistic — see [frontend-patterns.md](./frontend-patterns.md#optimistic-submit-flow)). If the submit deadline hits with a card selected, the client submits it; otherwise the backend auto-plays the lowest card.
+- **Interaction model:** **Select → confirm.** Click selects (cyan ring); confirm bar shows preview + “Play card N”. Hand locks while the mutation resolves (optimistic — see [frontend-patterns.md](./frontend-patterns.md#optimistic-submit-flow)). If the submit deadline hits with a card selected, the client submits it; otherwise the backend auto-plays the lowest card.
 - **Rule C copy:** When the played card is lower than all row tails, surface a toast in the resolve feed: *"Card too low — auto-collected row with fewest bones."*
 - **Transient phases (`DEAL`, `RESOLVE`, `SCORE`):** `GamePhaseOverlay` shows a shimmer + phase label to prevent interaction flash.
 
@@ -225,12 +224,12 @@ Primary end-game UX is an overlay on `GameView` (backdrop-blur, dimmed board). `
 | Moment | Animation | Duration | Reduced-motion fallback |
 |---|---|---|---|
 | Card hover | `translateY(-4px)` + soft shadow | 150ms | Opacity change only |
-| Card select | Amber ring scale-in | 120ms | Border color swap |
+| Card select | Cyan ring scale-in | 120ms | Border color swap |
 | Submit lock | Hand fades to `opacity: 0.5`; selected stays at 1 | 200ms | Instant state swap |
 | Player submitted | Player card border flash (green) | 300ms | Static border |
 | Countdown urgent | Timer color shift (amber → red) | 300ms | Static color |
 | Resolve reveal | Stagger fade + slide per `ResolvedPlay` | 120ms × n | All at once |
-| Row highlight | Background amber wash 10% → 0% | 200ms | 2px border flash |
+| Row highlight | Background warm wash 10% → 0% | 200ms | 2px border flash |
 | Copy code | Icon swap to `Check` | 200ms | Toast only |
 | Bones increment | Tabular tick / flip on score number | 400ms | Instant replace |
 | Player joins lobby | List item slide-in | 150ms | Static insert |
@@ -259,7 +258,7 @@ Assets live in `frontend/public/sfx/`. Triggered via the Web Audio API for minim
 - Color is never the only signal — connection state pairs the dot color with text/title; penalties surface a number, not just red.
 - Contrast: card numbers must hit WCAG AA against their gradient face (verify each hue band manually during implementation).
 - Keyboard: `Tab` cycles the hand; `1`–`N` selects the nth visible card; `Enter` confirms the selected card; `Esc` clears selection or opens leave confirm; `Esc`/`Enter` on dialogs cancel/confirm.
-- Focus rings are visible on dark surfaces — use the amber accent at 60% opacity.
+- Focus rings are visible on light surfaces — use the cyan accent at 60% opacity.
 
 ## Component Tree Additions
 
@@ -293,7 +292,7 @@ components/
 
 | Tier | Use | Style |
 |---|---|---|
-| Primary | Create room, Start game, Play card | Amber fill |
+| Primary | Create duel, Start duel, Play card | Cyan fill |
 | Secondary | Join room, Cancel, Copy | Border |
 | Destructive | Confirm leave (dialog only) | Red fill |
 | Icon | SFX, Leave, dismiss | Ghost + tooltip + `aria-label` |

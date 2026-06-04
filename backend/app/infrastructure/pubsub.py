@@ -10,10 +10,11 @@ from redis.asyncio import Redis
 
 from app.domain.game import GamePhase
 from app.infrastructure import redis as redis_keys
+from app.infrastructure.models import GameRoomState
 
 log = logging.getLogger(__name__)
 
-StateUpdateCallback = Callable[["StateUpdate"], Awaitable[None]]
+StateUpdateCallback = Callable[["StateUpdate", GameRoomState | None], Awaitable[None]]
 
 
 class StateUpdate:
@@ -59,9 +60,18 @@ class SubscriberRegistry:
         bucket = self._subscribers.get(update.room_id)
         if not bucket:
             return
+
+        room: GameRoomState | None = None
+        if update.event == "STATE_UPDATED":
+            from app.infrastructure import rooms as room_service
+
+            loaded = await room_service.load_room(update.room_id)
+            if loaded is not None and loaded.version == update.version:
+                room = loaded
+
         for callback in list(bucket):
             try:
-                await callback(update)
+                await callback(update, room)
             except Exception:
                 log.exception("Subscriber callback failed for room %s", update.room_id)
 

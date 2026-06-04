@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import CardTile from '@/components/game/CardTile.vue'
 import type { Card } from '@/graphql/types'
 
 defineProps<{
@@ -16,18 +15,18 @@ const emit = defineEmits<{
 <template>
   <div
     v-if="card"
-    class="flex flex-wrap items-center justify-center gap-3 rounded-md border border-accent/30 bg-surface px-4 py-3"
+    class="flex flex-wrap items-center justify-center gap-2 rounded-lg border border-accent/35 bg-surface-raised/95 px-4 py-2.5 shadow-md backdrop-blur-sm"
     role="region"
     aria-label="Confirm your card"
   >
-    <CardTile :card="card" selected size="sm" />
     <button
       type="button"
       class="btn btn-primary"
       :disabled="isSubmitting"
+      :aria-pressed="true"
       @click="emit('confirm')"
     >
-      <span v-if="isSubmitting">Submitting…</span>
+      <span v-if="isSubmitting">Playing…</span>
       <span v-else>Play card {{ card.value }}</span>
     </button>
     <button

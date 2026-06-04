@@ -11,6 +11,7 @@ from app.config import settings
 from app.domain.game import GamePhase
 from app.infrastructure import pubsub
 from app.infrastructure import redis as redis_keys
+from app.showcase import SHOWCASE_MAX_PLAYERS
 from app.infrastructure.errors import (
     GameAlreadyStartedError,
     InvalidDisplayNameError,
@@ -128,10 +129,11 @@ async def create_room(
     *,
     guest_id: str,
     display_name: str,
-    max_players: int = 10,
+    max_players: int = SHOWCASE_MAX_PLAYERS,
     client: Redis | None = None,
 ) -> GameRoomState:
     cleaned_name = validate_display_name(display_name)
+    max_players = SHOWCASE_MAX_PLAYERS
     redis = client or redis_keys.get_client()
 
     code: str | None = None

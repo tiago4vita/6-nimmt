@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.domain.game import GamePhase
+from app.showcase import SHOWCASE_MAX_PLAYERS
 
 
 class CardDTO(BaseModel):
@@ -39,7 +40,7 @@ class GameRoomState(BaseModel):
     code: str
     phase: GamePhase = GamePhase.LOBBY
     round_number: int = 0
-    max_players: int = 10
+    max_players: int = SHOWCASE_MAX_PLAYERS
     host_player_id: str
     version: int = 0
     created_at: datetime

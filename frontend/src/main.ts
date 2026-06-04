@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import urql from '@urql/vue'
+import Tres from '@tresjs/core'
 
 import App from './App.vue'
 import { urqlClient } from './graphql/client'
@@ -17,4 +18,4 @@ router.beforeEach(async () => {
   return true
 })
 
-createApp(App).use(router).use(urql, urqlClient).mount('#app')
+createApp(App).use(router).use(urql, urqlClient).use(Tres).mount('#app')
