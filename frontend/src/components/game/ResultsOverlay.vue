@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Trophy } from 'lucide-vue-next'
-import type { PlayerPublic } from '@/graphql/types'
+import type { GameFinishReason, PlayerPublic } from '@/graphql/types'
 
 const props = defineProps<{
   open: boolean
   players: PlayerPublic[]
   winnerIds: string[] | null
+  finishReason?: GameFinishReason | null
+  forfeitedPlayerIds?: string[] | null
   isRematching?: boolean
   isLeaving?: boolean
 }>()
@@ -26,7 +28,59 @@ const winners = computed(() =>
   props.players.filter((player) => props.winnerIds?.includes(player.id)),
 )
 
-const isTie = computed(() => winners.value.length > 1)
+const forfeitedPlayers = computed(() =>
+  props.players.filter((player) =>
+    props.forfeitedPlayerIds?.includes(player.id),
+  ),
+)
+
+const isWalkover = computed(
+  () =>
+    props.finishReason === 'WALKOVER_LEAVE' ||
+    props.finishReason === 'WALKOVER_AFK',
+)
+
+const isTie = computed(
+  () => !isWalkover.value && winners.value.length > 1,
+)
+
+const heading = computed(() => {
+  if (isWalkover.value) {
+    return 'Walkover'
+  }
+  if (isTie.value) {
+    return 'Shared victory'
+  }
+  return 'Final scores'
+})
+
+const subtitle = computed(() => {
+  const winnerNames = winners.value.map((player) => player.displayName)
+  const winnerLabel =
+    winnerNames.length === 1
+      ? winnerNames[0]
+      : winnerNames.join(' & ')
+
+  if (props.finishReason === 'WALKOVER_LEAVE') {
+    const leaver = forfeitedPlayers.value[0]?.displayName ?? 'Opponent'
+    return `${leaver} left the game — ${winnerLabel} wins by W.O.`
+  }
+
+  if (props.finishReason === 'WALKOVER_AFK') {
+    const absent = forfeitedPlayers.value[0]?.displayName ?? 'Opponent'
+    return `${absent} was away for 3 rounds — ${winnerLabel} wins by W.O.`
+  }
+
+  if (isTie.value) {
+    return `Tie at ${winners.value[0]?.bonesTotal ?? 0} bones — ${winnerLabel}`
+  }
+
+  if (winners.value.length === 1) {
+    return `Winner: ${winnerLabel}`
+  }
+
+  return null
+})
 
 const rankedPlayers = computed((): RankedPlayer[] => {
   const sorted = [...props.players].sort(
@@ -51,6 +105,24 @@ const rankedPlayers = computed((): RankedPlayer[] => {
 
   return ranked
 })
+
+function winnerHighlightClass(isWinner: boolean): string {
+  if (!isWinner) {
+    return 'border-border bg-surface'
+  }
+  if (isTie.value) {
+    return 'border-victory-gold/50 border-l-4 border-l-victory-gold bg-victory-gold/10'
+  }
+  return 'border-accent/50 border-l-4 border-l-accent bg-accent/10'
+}
+
+const headerAccentClass = computed(() =>
+  isTie.value ? 'text-victory-gold' : 'text-accent',
+)
+
+const winnerIconClass = computed(() =>
+  isTie.value ? 'text-victory-gold' : 'text-accent',
+)
 </script>
 
 <template>
@@ -64,21 +136,15 @@ const rankedPlayers = computed((): RankedPlayer[] => {
     <div
       class="w-full max-w-lg rounded-2xl border border-border bg-surface-raised p-6 shadow-2xl"
     >
-      <div class="flex items-center gap-2 text-accent">
+      <div class="flex items-center gap-2" :class="headerAccentClass">
         <Trophy class="size-5" aria-hidden="true" />
         <h2 class="text-xl font-semibold text-text">
-          {{ isTie ? 'Shared victory' : 'Final scores' }}
+          {{ heading }}
         </h2>
       </div>
 
-      <p v-if="winners.length" class="mt-2 text-sm text-muted">
-        <template v-if="isTie">
-          Tie at {{ winners[0]?.bonesTotal ?? 0 }} bones —
-          {{ winners.map((player) => player.displayName).join(' & ') }}
-        </template>
-        <template v-else>
-          Winner: {{ winners[0]?.displayName }}
-        </template>
+      <p v-if="subtitle" class="mt-2 text-sm text-muted">
+        {{ subtitle }}
       </p>
 
       <ol class="mt-4 space-y-2">
@@ -86,22 +152,26 @@ const rankedPlayers = computed((): RankedPlayer[] => {
           v-for="{ player, rank, isWinner } in rankedPlayers"
           :key="player.id"
           class="flex items-center justify-between rounded-md border px-3 py-2"
-          :class="
-            isWinner
-              ? 'border-accent/50 border-l-4 border-l-accent bg-accent/10'
-              : 'border-border bg-surface'
-          "
+          :class="winnerHighlightClass(isWinner)"
         >
           <span class="flex items-center gap-2 text-sm text-text">
             <Trophy
               v-if="isWinner"
-              class="size-4 shrink-0 text-accent"
+              class="size-4 shrink-0"
+              :class="winnerIconClass"
               aria-hidden="true"
             />
             <span>#{{ rank }} {{ player.displayName }}</span>
+            <span
+              v-if="forfeitedPlayerIds?.includes(player.id)"
+              class="text-[10px] uppercase tracking-wide text-danger"
+            >
+              W.O.
+            </span>
           </span>
           <span class="text-sm font-medium tabular-nums text-text">
-            {{ player.bonesTotal }} bones
+            <template v-if="isWalkover && !isWinner">—</template>
+            <template v-else>{{ player.bonesTotal }} bones</template>
           </span>
         </li>
       </ol>

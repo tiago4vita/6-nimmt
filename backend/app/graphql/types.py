@@ -6,10 +6,12 @@ import strawberry
 
 from app.domain.cards import bones as bones_for_value
 from app.domain.game import GamePhase as DomainGamePhase
+from app.domain.game import GameFinishReason as DomainGameFinishReason
 from app.graphql.errors import GameErrorCode
 
 
 GamePhase = strawberry.enum(DomainGamePhase, name="GamePhase")
+GameFinishReason = strawberry.enum(DomainGameFinishReason, name="GameFinishReason")
 
 
 @strawberry.type
@@ -57,6 +59,8 @@ class GameRoomPublic:
     submit_deadline: datetime | None
     submit_timeout_seconds: int
     winner_ids: list[strawberry.ID] | None
+    finish_reason: GameFinishReason | None  # type: ignore[valid-type]
+    forfeited_player_ids: list[strawberry.ID] | None
     updated_at: datetime
 
 

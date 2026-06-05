@@ -62,6 +62,12 @@ def build_public_room(room: GameRoomState) -> GameRoomPublic:
             if room.winner_ids is not None
             else None
         ),
+        finish_reason=room.finish_reason,
+        forfeited_player_ids=(
+            [strawberry.ID(player_id) for player_id in room.forfeited_player_ids]
+            if room.forfeited_player_ids is not None
+            else None
+        ),
         updated_at=room.updated_at,
     )
 

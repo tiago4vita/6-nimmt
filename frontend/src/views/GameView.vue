@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import AppShell from '@/components/layout/AppShell.vue'
 import ConfirmDialog from '@/components/feedback/ConfirmDialog.vue'
 import ConnectionStatusBanner from '@/components/feedback/ConnectionStatusBanner.vue'
+import BonePop from '@/components/game/BonePop.vue'
 import CardConfirmBar from '@/components/game/CardConfirmBar.vue'
 import GameScene from '@/components/game/scene/GameScene.vue'
 import GameHudBar from '@/components/game/GameHudBar.vue'
@@ -12,6 +13,7 @@ import PlayerStrip from '@/components/game/PlayerStrip.vue'
 import ResultsOverlay from '@/components/game/ResultsOverlay.vue'
 import LoadingShell from '@/components/layout/LoadingShell.vue'
 import { isFinishedPhase } from '@/graphql/types'
+import { useBonePop } from '@/composables/useBonePop'
 import { useCardSelection } from '@/composables/useCardSelection'
 import { useGameRoom } from '@/composables/useGameRoom'
 import { useGameShortcuts } from '@/composables/useGameShortcuts'
@@ -89,12 +91,15 @@ const opponent = computed(() =>
 
 const opponentHasSubmitted = computed(() => opponent.value?.hasSubmitted ?? false)
 
+const { pops: bonePops, triggerPop, clearPops } = useBonePop()
+
 const {
   flyingCardId,
   stagingYourCard,
   opponentStagingVisible,
   displayRows,
   activeResolveRowIndex,
+  shakingRowIndex,
   isMotionActive,
   beginYourFlight,
   resetMotion,
@@ -109,6 +114,12 @@ const {
   myHand,
   mySubmittedCard,
   opponentHasSubmitted,
+  onResolveToast: (message) => {
+    pushToast({ message, variant: 'info' })
+  },
+  onBonePop: (playerId, bonesTaken) => {
+    triggerPop(playerId, bonesTaken, myPlayerId.value)
+  },
 })
 
 const selectedCard = computed(() => {
@@ -194,6 +205,7 @@ async function handleConfirm(): Promise<void> {
 
   if (failure) {
     resetMotion()
+    clearPops()
   }
 }
 
@@ -251,6 +263,10 @@ const showPhaseOverlay = computed(() => !isMotionActive.value)
 watch(
   phase,
   (nextPhase) => {
+    if (nextPhase === 'LOBBY' || nextPhase === 'DEAL') {
+      clearPops()
+    }
+
     if (nextPhase === 'LOBBY') {
       clearResultsOverlayTimer()
       showResults.value = false
@@ -372,12 +388,15 @@ async function handleExitRoom(): Promise<void> {
           :hand-disabled="handInteractionLocked || phase !== 'SUBMIT'"
           :hand-frozen="handFrozen"
           :highlighted-row-index="highlightedRowIndex"
+          :shaking-row-index="shakingRowIndex"
           :staged-your-card="stagedCardDisplay"
           :opponent-staging-visible="opponentStagingVisible"
           :motion-debug="motionDebug"
           @register-opponent-opacity="registerOpponentOpacity"
           @select="selectCard"
         />
+
+        <BonePop :pops="bonePops" />
 
         <div
           v-if="showConfirmOverlay"
@@ -415,6 +434,8 @@ async function handleExitRoom(): Promise<void> {
       :open="showResults"
       :players="players"
       :winner-ids="room?.winnerIds ?? null"
+      :finish-reason="room?.finishReason ?? null"
+      :forfeited-player-ids="room?.forfeitedPlayerIds ?? null"
       :is-rematching="isRematching"
       :is-leaving="isLeaving"
       @rematch="handleRematch"

@@ -29,6 +29,8 @@ export const PLAYER_PRIVATE_VIEW_FIELDS = `
       submitDeadline
       submitTimeoutSeconds
       winnerIds
+      finishReason
+      forfeitedPlayerIds
       updatedAt
       rows {
         index

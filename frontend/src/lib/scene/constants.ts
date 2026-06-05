@@ -49,13 +49,24 @@ export const HAND_MOTION = {
 export const CARD_MOTION = {
   durationMs: 460,
   arcHeight: 0.52,
-  /** Breath between sequential steps so each beat reads clearly. */
-  stepGapMs: 180,
+  /** Breath between sequential resolve beats (roadmap 6.9: ~350–500ms). */
+  stepGapMs: 400,
   /** Hold source orientation this fraction of flight before flipping (0–1). */
   flipDelay: 0.67,
   /** Opponent back → face reveal threshold during staging→row flight (0–1). */
   faceRevealAt: 0.72,
   reducedStepGapMs: 40,
+} as const
+
+/** Resolve-specific pauses — row shake, Rule C toast beat, collection flights. */
+export const RESOLVE_MOTION = {
+  ruleCBeatMs: 360,
+  ruleBBeatMs: 300,
+  rowShakeMs: 440,
+  rowCollectMs: 190,
+  rowRepositionMs: 160,
+  /** Half of CARD_MOTION.stepGapMs — keeps multi-card collect chains snappy. */
+  collectStepGapMs: 200,
 } as const
 
 /** Staging slots — shared bottom-right corner; cards rest face-normal toward world -Y. */

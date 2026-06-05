@@ -5,6 +5,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.domain.game import GamePhase
+from app.domain.game import GameFinishReason
 from app.showcase import SHOWCASE_MAX_PLAYERS
 
 
@@ -33,6 +34,7 @@ class PlayerInRoom(BaseModel):
     hand: list[CardDTO] = Field(default_factory=list)
     is_connected: bool = True
     submission: str | None = None
+    consecutive_auto_submit_rounds: int = 0
 
 
 class GameRoomState(BaseModel):
@@ -52,6 +54,8 @@ class GameRoomState(BaseModel):
     deck: list[CardDTO] = Field(default_factory=list)
     last_resolution: list[ResolvedPlayDTO] | None = None
     winner_ids: list[str] | None = None
+    finish_reason: GameFinishReason | None = None
+    forfeited_player_ids: list[str] | None = None
 
     def player_by_guest_id(self, guest_id: str) -> PlayerInRoom | None:
         for player in self.players:

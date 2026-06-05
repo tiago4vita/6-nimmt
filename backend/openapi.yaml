@@ -1,9 +1,10 @@
 openapi: 3.1.0
 info:
-  title: 6 Nimmt API
+  title: BARE BONES API
   version: 0.1.0
   description: |
-    HTTP and WebSocket surface for the **6 nimmt!** (*Take 6*) multiplayer card game.
+    HTTP and WebSocket surface for **BARE BONES** — a multiplayer trick-avoidance card game
+    inspired by *6 nimmt!* (*Take 6*).
 
     ## Architecture
 
@@ -67,7 +68,8 @@ info:
     See **components.schemas** for type definitions and **x-graphql-operations** for the operation catalog.
 
   contact:
-    name: 6 Nimmt
+    name: Tiago Vita
+    email: tiago.parejavita4@gmail.com
   license:
     name: MIT
 

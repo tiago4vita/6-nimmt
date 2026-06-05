@@ -8,6 +8,10 @@ import {
 
 import type { Card } from '@/graphql/types'
 import {
+  attachBoneTierEffects,
+  type BoneTierEffectHandle,
+} from '@/lib/scene/boneTierEffects'
+import {
   createCardBackTexture,
   createCardFaceTexture,
   disposeCardFaceTexture,
@@ -52,6 +56,16 @@ export function createStagingCardGroup(
 
   const meshes: Mesh[] = []
   let faceMesh: Mesh | null = null
+  let boneTierEffects: BoneTierEffectHandle | null = null
+
+  function syncBoneTierEffects(bones: number): void {
+    boneTierEffects?.dispose()
+    boneTierEffects = null
+    if (!faceMesh) {
+      return
+    }
+    boneTierEffects = attachBoneTierEffects(group, faceMesh, bones)
+  }
 
   if (showBackOnly) {
     const back = new Mesh(cardPlane, backMaterial)
@@ -74,6 +88,7 @@ export function createStagingCardGroup(
     group.add(back, face)
     meshes.push(back, face)
     faceMesh = face
+    syncBoneTierEffects(card.bones)
   }
 
   function setOpacity(opacity: number): void {
@@ -94,6 +109,7 @@ export function createStagingCardGroup(
     disposeCardFaceTexture(faceMaterial.map)
     faceMaterial.map = createCardFaceTexture(value, bones)
     faceMaterial.needsUpdate = true
+    syncBoneTierEffects(bones)
   }
 
   function setShowBack(showBack: boolean): void {
@@ -103,6 +119,7 @@ export function createStagingCardGroup(
   }
 
   function dispose(): void {
+    boneTierEffects?.dispose()
     if (!showBackOnly) {
       disposeCardFaceTexture(faceMaterial.map)
     }

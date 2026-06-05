@@ -13,12 +13,12 @@ async def test_health_and_openapi_endpoints() -> None:
 
         openapi_yaml = await client.get("/openapi.yaml")
         assert openapi_yaml.status_code == 200
-        assert "6 Nimmt API" in openapi_yaml.text
+        assert "BARE BONES API" in openapi_yaml.text
 
         openapi_json = await client.get("/openapi.json")
         assert openapi_json.status_code == 200
         payload = openapi_json.json()
-        assert payload["info"]["title"] == "6 Nimmt API"
+        assert payload["info"]["title"] == "BARE BONES API"
         assert "/graphql" in payload["paths"]
         assert "ensureGuestSession" in payload["x-graphql-operations"]["queries"]
 

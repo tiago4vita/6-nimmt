@@ -7,7 +7,7 @@ from redis.asyncio import Redis
 from app.config import settings
 from app.domain import resolve as domain_resolve
 from app.domain import start_game as domain_start_game
-from app.domain.game import GamePhase
+from app.domain.game import AFK_FORFEIT_ROUNDS, GameFinishReason, GamePhase
 from app.infrastructure import pubsub, rooms, timers
 from app.infrastructure.adapters import (
     apply_game_state,
@@ -60,12 +60,46 @@ def _reset_room_to_lobby(room: GameRoomState) -> None:
     room.deck = []
     room.last_resolution = None
     room.winner_ids = None
+    room.finish_reason = None
+    room.forfeited_player_ids = None
     room.submit_deadline = None
     timers.cancel_submit_deadline(room.id)
     for player in room.players:
         player.hand = []
         player.bones_total = 0
         player.submission = None
+        player.consecutive_auto_submit_rounds = 0
+
+
+def _finish_by_walkover(
+    room: GameRoomState,
+    *,
+    forfeited_player_ids: list[str],
+    reason: GameFinishReason,
+) -> None:
+    forfeited = set(forfeited_player_ids)
+    room.phase = GamePhase.FINISHED
+    room.finish_reason = reason
+    room.forfeited_player_ids = list(forfeited_player_ids)
+    room.winner_ids = [player.id for player in room.players if player.id not in forfeited]
+    room.submit_deadline = None
+    timers.cancel_submit_deadline(room.id)
+    clear_submissions(room)
+
+
+def finish_walkover_on_leave(room: GameRoomState, leaver_player_id: str) -> bool:
+    """End an active duel when a seated player leaves. Returns True if game ended."""
+    if room.phase in {GamePhase.LOBBY, GamePhase.FINISHED}:
+        return False
+    if len(room.players) < MIN_PLAYERS:
+        return False
+
+    _finish_by_walkover(
+        room,
+        forfeited_player_ids=[leaver_player_id],
+        reason=GameFinishReason.WALKOVER_LEAVE,
+    )
+    return True
 
 
 async def return_to_lobby(
@@ -109,6 +143,10 @@ async def start_game(
         state = domain_start_game([player.id for player in room.players])
         apply_game_state(room, state)
         clear_submissions(room)
+        room.finish_reason = None
+        room.forfeited_player_ids = None
+        for player in room.players:
+            player.consecutive_auto_submit_rounds = 0
         _schedule_submit_deadline(room)
 
         await _save_and_publish(room, client=client)
@@ -131,6 +169,9 @@ async def _resolve_round(room: GameRoomState, *, client: Redis | None) -> None:
     state = room_to_game_state(room)
     resolved_state = domain_resolve.resolve_turn(state, submissions)
     apply_game_state(room, resolved_state)
+    if room.phase == GamePhase.FINISHED and room.finish_reason is None:
+        room.finish_reason = GameFinishReason.NORMAL
+        room.forfeited_player_ids = None
     clear_submissions(room)
     _on_resolved(room)
 
@@ -156,6 +197,7 @@ async def submit_card(
             raise CardNotInHandError("Card is not in the player's hand")
 
         player.submission = card_id
+        player.consecutive_auto_submit_rounds = 0
 
         active_ids = {p.id for p in room.players}
         submissions = {p.id: p.submission for p in room.players if p.submission}
@@ -181,6 +223,15 @@ async def handle_submit_timeout(room_id: str) -> GameRoomState | None:
                 continue
             if not player.hand:
                 continue
+            player.consecutive_auto_submit_rounds += 1
+            if player.consecutive_auto_submit_rounds >= AFK_FORFEIT_ROUNDS:
+                _finish_by_walkover(
+                    room,
+                    forfeited_player_ids=[player.id],
+                    reason=GameFinishReason.WALKOVER_AFK,
+                )
+                await _save_and_publish(room)
+                return room
             lowest = min(player.hand, key=lambda card: card.value)
             player.submission = lowest.id
 

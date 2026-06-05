@@ -118,9 +118,9 @@ function onCodeComplete(code: string): void {
 
     <div v-else class="mx-auto flex max-w-md flex-col gap-6">
       <div class="text-center">
-        <h1 class="text-3xl font-semibold tracking-tight text-text">Play 6 Nimmt</h1>
+        <h1 class="text-3xl font-semibold tracking-tight text-text">BARE BONES</h1>
         <p class="mt-2 text-sm text-muted">
-          Start a 1v1 duel or join with a code. No account needed.
+          Trick-avoidance card duel — create a room or join with a code. No account needed.
         </p>
       </div>
 

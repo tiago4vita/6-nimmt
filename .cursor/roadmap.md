@@ -1,4 +1,4 @@
-# 6-Nimmt — Implementation Roadmap
+# BARE BONES — Implementation Roadmap
 
 Task tracker for moving from **dev scaffold → playable MVP → portfolio polish**. Architecture and rules live in the other `.cursor/` docs — this file is the execution order.
 
@@ -500,38 +500,38 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.9 — Resolve sequence animations
+### 6.9 — Resolve sequence animations *(complete)*
 
 **Deliverable:** Resolve reads like a tutorial — staging → row placement → row penalty — one beat at a time.
 
-- On `phase === RESOLVE'`, consume `lastResolvedPlays` in sort order (already ascending on server)
-- Per play: move staging card → target row slot (Rule A placement position)
-- Rule B — pause, shake row, collect 5 cards to player bone pile zone, played card starts row
-- Rule C — pause, toast copy, collect chosen row, then place card
-- Stagger ~350–500ms between plays; row highlight synced to active play
+- [x] On `lastResolvedPlays` update, consume plays in ascending server order
+- [x] Per play: staging card → target row slot (Rule A placement index)
+- [x] Rule B — beat pause, row shake, collect 5 cards to player bone pile, played card recenters as new row
+- [x] Rule C — toast copy, beat pause, row shake, collect chosen row, then place card
+- [x] Stagger ~400ms between steps; row highlight synced to active play
 
 **Review checkpoint:** Record a round with mixed rules; viewer can narrate what happened from motion alone.
 
 ---
 
-### 6.10 — Bone pop feedback
+### 6.10 — Bone pop feedback *(complete)*
 
 **Deliverable:** When a player gains bones, a big **+N 🦴** pops center-screen with player-colored glow.
 
-- `BonePop.vue` HTML overlay (not Three.js text — sharper at CRT scale)
-- Trigger on each resolve step where `bonesTaken > 0`
-- Player tint — map `playerId` → shadow color (you vs opponent palette)
-- Animation — scale 0.6→1.1→1, fade out ~900ms; stack if multiple in sequence (offset Y)
+- [x] `BonePop.vue` HTML overlay (not Three.js text — sharper at CRT scale)
+- [x] Trigger on each resolve step where `bonesTaken > 0`
+- [x] Player tint — map `playerId` → shadow color (you vs opponent palette)
+- [x] Animation — scale 0.6→1.1→1, fade out ~900ms; stack if multiple in sequence (offset Y)
 
 **Review checkpoint:** Taking a row with 12+ bones feels impactful; zero-bone steps stay silent.
 
 ---
 
-### 6.11 — Bone-tier card materials *(v1 improvise)*
+### 6.11 — Bone-tier card materials *(complete)*
 
 **Deliverable:** Higher bone cards feel more dangerous — materials/particles scale with `bones` (1 → 7).
 
-- Tier table in `cardAppearance.ts`:
+- [x] Tier table in `cardAppearance.ts`:
 
   | Bones | V1 treatment                                 |
   | ----- | -------------------------------------------- |
@@ -541,8 +541,8 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
   | 5     | Emissive edge + slow pulse                   |
   | 7     | Particle sparkles + scanline shimmer on face |
 
-- Apply to 3D face material + optional cheap particles (Points / sprite) for 5+
-- Row + staging cards use same tier rules
+- [x] Apply to 3D face material + runtime particles (`boneTierEffects.ts`) for tiers 2+
+- [x] Row + staging cards use same tier rules via `CardMesh` + `stagingCardGroup`
 
 **Review checkpoint:** Card 55 is unmistakably “scary”; card 1 stays calm; performance OK with 10 cards visible.
 
@@ -621,8 +621,8 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 
 **Immediate actions:**
 
-1. **M6.9** — resolve sequence animations (Rule B/C beats, row shake).
-2. Continue **6.10 → 6.12** in order.
+1. **M6.12** — chrome & lobby light pass (Wii shell consistency).
+2. Continue **6.13** in order.
 
 ---
 

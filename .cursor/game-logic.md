@@ -2,7 +2,7 @@
 
 ## Game Summary
 
-**6 nimmt!** (*Take 6*) is a trick-avoidance card game. Players simultaneously play numbered cards onto four ascending rows. Playing the sixth card in a row (or being forced to take a row) collects **bones** (penalty points). **Lowest total bones wins.**
+**BARE BONES** implements the trick-avoidance rules of *6 nimmt!* (*Take 6*). Players simultaneously play numbered cards onto four ascending rows. Playing the sixth card in a row (or being forced to take a row) collects **bones** (penalty points). **Lowest total bones wins.**
 
 ## Card Deck
 
