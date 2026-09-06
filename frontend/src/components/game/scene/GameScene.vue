@@ -99,7 +99,7 @@ const [playfieldX, , playfieldZ] = playfieldCenter()
         :rows="props.rows"
         :highlighted-row-index="props.highlightedRowIndex"
         :shaking-row-index="props.shakingRowIndex"
-        :highlight-color="colors.accentWarm"
+        :highlight-color="colors.accent"
       />
 
       <SubmitStaging

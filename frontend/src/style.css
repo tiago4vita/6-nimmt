@@ -3,62 +3,69 @@
 @import "@fontsource/inter/600.css";
 
 :root {
-  --color-surface: #f2f0eb;
-  --color-surface-raised: #ffffff;
-  --color-felt: #fafafa;
-  --color-border: #d4d0c8;
-  --color-text: #2a2a2a;
-  --color-muted: #6b6b6b;
-  --color-accent: #0099cc;
-  --color-accent-warm: #e85d04;
-  --color-danger: #ef4444;
-  --color-success: #4caf50;
-  --color-victory-gold: #ca8a04;
-  --color-card-back: #4a4a4a;
-  --color-card-edge: #3a3a3a;
-  --color-card-face-text: #ffffff;
-  --color-card-face-shadow: rgba(0, 0, 0, 0.35);
-  --color-card-bone-marker: rgba(255, 255, 255, 0.88);
-  --color-card-band-violet-from: #6366f1;
-  --color-card-band-violet-to: #7c3aed;
-  --color-card-band-teal-from: #14b8a6;
-  --color-card-band-teal-to: #059669;
-  --color-card-band-amber-from: #f59e0b;
-  --color-card-band-amber-to: #ea580c;
-  --color-card-band-rose-from: #f43f5e;
-  --color-card-band-rose-to: #dc2626;
-  --color-scene-clear: var(--color-surface);
-  --color-scene-shadow: var(--color-border);
-  --color-scene-light-ambient: var(--color-surface-raised);
-  --color-scene-light-directional: var(--color-surface-raised);
-  --color-scene-light-hemisphere-sky: var(--color-surface-raised);
-  --color-scene-light-hemisphere-ground: var(--color-border);
+  --color-dark: #7d3623;
+  --color-light: #ffe7e0;
+
+  --color-surface: var(--color-light);
+  --color-surface-raised: var(--color-light);
+  --color-text: var(--color-dark);
+  --color-muted: color-mix(in srgb, var(--color-dark) 65%, transparent);
+  --color-border: color-mix(in srgb, var(--color-dark) 18%, transparent);
+
+  --color-header-bg: var(--color-dark);
+  --color-header-text: var(--color-light);
+
+  --color-accent: #7d3623;
+  --color-accent-foreground: #ffe7e0;
+
+  --color-danger: #b91c1c;
+  --color-success: #237d62;
+  --color-victory-gold: #7d7723;
+
+  --color-card-tier-7: #3f237d;
+  --color-card-tier-5: #237d62;
+  --color-card-tier-3: #7d7723;
+  --color-card-tier-2: #7D3623;
+  --color-card-tier-1: #4A2C23;
+  --color-card-face-text: #ffe7e0;
+  --color-card-face-shadow: color-mix(in srgb, var(--color-dark) 35%, transparent);
+  --color-card-bone-marker: #ffe7e0;
+  --color-card-back: #7d3623;
+  --color-card-edge: #7d3623;
+
+  --color-scene-clear: #ffe7e0;
+  --color-scene-shadow: #7d3623;
+  --color-scene-light-ambient: var(--color-light);
+  --color-scene-light-directional: var(--color-light);
+  --color-scene-light-hemisphere-sky: var(--color-light);
+  --color-scene-light-hemisphere-ground: #c9a89e;
 }
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-dark: var(--color-dark);
+  --color-light: var(--color-light);
   --color-surface: var(--color-surface);
   --color-surface-raised: var(--color-surface-raised);
-  --color-felt: var(--color-felt);
   --color-border: var(--color-border);
   --color-text: var(--color-text);
   --color-muted: var(--color-muted);
+  --color-header-bg: var(--color-header-bg);
+  --color-header-text: var(--color-header-text);
   --color-accent: var(--color-accent);
-  --color-accent-warm: var(--color-accent-warm);
+  --color-accent-foreground: var(--color-accent-foreground);
   --color-danger: var(--color-danger);
   --color-success: var(--color-success);
   --color-victory-gold: var(--color-victory-gold);
+  --color-card-tier-7: var(--color-card-tier-7);
+  --color-card-tier-5: var(--color-card-tier-5);
+  --color-card-tier-3: var(--color-card-tier-3);
+  --color-card-tier-2: var(--color-card-tier-2);
+  --color-card-tier-1: var(--color-card-tier-1);
   --color-card-back: var(--color-card-back);
   --color-card-edge: var(--color-card-edge);
   --color-card-face-text: var(--color-card-face-text);
-  --color-card-band-violet-from: var(--color-card-band-violet-from);
-  --color-card-band-violet-to: var(--color-card-band-violet-to);
-  --color-card-band-teal-from: var(--color-card-band-teal-from);
-  --color-card-band-teal-to: var(--color-card-band-teal-to);
-  --color-card-band-amber-from: var(--color-card-band-amber-from);
-  --color-card-band-amber-to: var(--color-card-band-amber-to);
-  --color-card-band-rose-from: var(--color-card-band-rose-from);
-  --color-card-band-rose-to: var(--color-card-band-rose-to);
+  --color-scene-clear: var(--color-scene-clear);
 }
 
 html,
@@ -72,6 +79,7 @@ body {
   background: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-sans);
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
 
@@ -134,17 +142,17 @@ body {
   }
 
   .bone-pop--you {
-    color: var(--color-accent);
+    color: var(--color-dark);
     text-shadow:
-      0 0 28px color-mix(in srgb, var(--color-accent) 55%, transparent),
-      0 2px 8px color-mix(in srgb, var(--color-text) 25%, transparent);
+      0 0 28px color-mix(in srgb, var(--color-dark) 45%, transparent),
+      0 2px 8px color-mix(in srgb, var(--color-dark) 25%, transparent);
   }
 
   .bone-pop--opponent {
-    color: var(--color-accent-warm);
+    color: var(--color-card-tier-5);
     text-shadow:
-      0 0 28px color-mix(in srgb, var(--color-accent-warm) 55%, transparent),
-      0 2px 8px color-mix(in srgb, var(--color-text) 25%, transparent);
+      0 0 28px color-mix(in srgb, var(--color-card-tier-5) 45%, transparent),
+      0 2px 8px color-mix(in srgb, var(--color-dark) 25%, transparent);
   }
 }
 
@@ -157,7 +165,7 @@ body {
     border-radius: 0.375rem;
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
-    font-weight: 500;
+    font-weight: 600;
     line-height: 1.25rem;
     outline: none;
     transition: opacity 150ms, background-color 150ms, color 150ms,
@@ -175,13 +183,9 @@ body {
 
   .btn-primary {
     background: var(--color-accent);
-    color: #ffffff;
-    font-weight: 600;
-  }
-
-  .crt-game {
-    position: relative;
-    isolation: isolate;
+    color: var(--color-accent-foreground);
+    font-weight: 700;
+    border: 1px solid transparent;
   }
 
   .btn-primary:hover:not(:disabled) {
@@ -191,17 +195,18 @@ body {
   .btn-secondary {
     background: transparent;
     color: var(--color-text);
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--color-dark);
   }
 
   .btn-secondary:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+    background: color-mix(in srgb, var(--color-dark) 6%, transparent);
   }
 
   .btn-destructive {
     background: var(--color-danger);
-    color: #ffffff;
-    font-weight: 500;
+    color: var(--color-accent-foreground);
+    font-weight: 600;
+    border: 1px solid transparent;
   }
 
   .btn-destructive:hover:not(:disabled) {

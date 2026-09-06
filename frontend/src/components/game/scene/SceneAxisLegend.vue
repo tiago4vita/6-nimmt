@@ -1,5 +1,8 @@
 <script setup lang="ts">
-import { PLAYFIELD, SCENE_DEBUG, TABLE } from '@/lib/scene/constants'
+import { useDevMode } from '@/composables/useDevMode'
+import { PLAYFIELD, TABLE } from '@/lib/scene/constants'
+
+const { devModeEnabled } = useDevMode()
 
 const playfieldRightX = PLAYFIELD.leftX + PLAYFIELD.width
 const playfieldBackZ = PLAYFIELD.frontZ - PLAYFIELD.depth
@@ -7,7 +10,7 @@ const playfieldBackZ = PLAYFIELD.frontZ - PLAYFIELD.depth
 
 <template>
   <aside
-    v-if="SCENE_DEBUG.showAxisIndicator"
+    v-if="devModeEnabled"
     class="scene-axis-legend pointer-events-none absolute bottom-3 left-3 z-10 select-none font-mono text-[10px] leading-relaxed text-text/80"
     aria-hidden="true"
   >

@@ -74,19 +74,19 @@ function playTitle(play: ResolvedPlay): string {
         <div class="h-8 w-px bg-border" />
         <div>
           <div class="text-[10px] uppercase tracking-wide text-muted">Round</div>
-          <div class="font-medium tabular-nums text-text">{{ roundNumber }}</div>
+          <div class="font-semibold tabular-nums text-text">{{ roundNumber }}</div>
         </div>
         <div class="h-8 w-px bg-border" />
         <div>
           <div class="text-[10px] uppercase tracking-wide text-muted">Phase</div>
-          <div class="font-medium text-text">
+          <div class="font-semibold text-text">
             {{ phase ? phaseLabels[phase] : 'Loading' }}
           </div>
         </div>
         <div class="h-8 w-px bg-border" />
         <div>
           <div class="text-[10px] uppercase tracking-wide text-muted">Room</div>
-          <div class="font-medium tracking-[0.18em] text-accent">
+          <div class="font-semibold tracking-[0.18em] text-accent">
             {{ roomCode }}
           </div>
         </div>

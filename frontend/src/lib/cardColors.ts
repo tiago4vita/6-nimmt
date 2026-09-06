@@ -5,38 +5,27 @@ export const CARD_COLOR_TOKENS = {
   faceText: '--color-card-face-text',
   faceShadow: '--color-card-face-shadow',
   boneMarker: '--color-card-bone-marker',
-  bandVioletFrom: '--color-card-band-violet-from',
-  bandVioletTo: '--color-card-band-violet-to',
-  bandTealFrom: '--color-card-band-teal-from',
-  bandTealTo: '--color-card-band-teal-to',
-  bandAmberFrom: '--color-card-band-amber-from',
-  bandAmberTo: '--color-card-band-amber-to',
-  bandRoseFrom: '--color-card-band-rose-from',
-  bandRoseTo: '--color-card-band-rose-to',
+  tier7: '--color-card-tier-7',
+  tier5: '--color-card-tier-5',
+  tier3: '--color-card-tier-3',
+  tier2: '--color-card-tier-2',
+  tier1: '--color-card-tier-1',
 } as const
 
 const CARD_COLOR_FALLBACKS: Record<
   (typeof CARD_COLOR_TOKENS)[keyof typeof CARD_COLOR_TOKENS],
   string
 > = {
-  [CARD_COLOR_TOKENS.back]: '#4a4a4a',
-  [CARD_COLOR_TOKENS.edge]: '#3a3a3a',
-  [CARD_COLOR_TOKENS.faceText]: '#ffffff',
-  [CARD_COLOR_TOKENS.faceShadow]: 'rgba(0, 0, 0, 0.35)',
-  [CARD_COLOR_TOKENS.boneMarker]: 'rgba(255, 255, 255, 0.88)',
-  [CARD_COLOR_TOKENS.bandVioletFrom]: '#6366f1',
-  [CARD_COLOR_TOKENS.bandVioletTo]: '#7c3aed',
-  [CARD_COLOR_TOKENS.bandTealFrom]: '#14b8a6',
-  [CARD_COLOR_TOKENS.bandTealTo]: '#059669',
-  [CARD_COLOR_TOKENS.bandAmberFrom]: '#f59e0b',
-  [CARD_COLOR_TOKENS.bandAmberTo]: '#ea580c',
-  [CARD_COLOR_TOKENS.bandRoseFrom]: '#f43f5e',
-  [CARD_COLOR_TOKENS.bandRoseTo]: '#dc2626',
-}
-
-export interface CardHueBand {
-  from: string
-  to: string
+  [CARD_COLOR_TOKENS.back]: '#7d3623',
+  [CARD_COLOR_TOKENS.edge]: '#7d3623',
+  [CARD_COLOR_TOKENS.faceText]: '#ffe7e0',
+  [CARD_COLOR_TOKENS.faceShadow]: 'rgba(125, 54, 35, 0.35)',
+  [CARD_COLOR_TOKENS.boneMarker]: '#ffe7e0',
+  [CARD_COLOR_TOKENS.tier7]: '#7d3623',
+  [CARD_COLOR_TOKENS.tier5]: '#3f237d',
+  [CARD_COLOR_TOKENS.tier3]: '#237d62',
+  [CARD_COLOR_TOKENS.tier2]: '#7d7723',
+  [CARD_COLOR_TOKENS.tier1]: '#d29281',
 }
 
 export interface CardFaceColors {
@@ -47,13 +36,23 @@ export interface CardFaceColors {
   boneMarker: string
 }
 
+function resolveCssColor(raw: string): string {
+  const value = raw.trim()
+  if (!value.startsWith('var(')) {
+    return value
+  }
+  const inner = value.slice(4, value.endsWith(')') ? -1 : undefined).trim()
+  const nested = getComputedStyle(document.documentElement).getPropertyValue(inner).trim()
+  return nested || value
+}
+
 function readToken(token: (typeof CARD_COLOR_TOKENS)[keyof typeof CARD_COLOR_TOKENS]): string {
   const fallback = CARD_COLOR_FALLBACKS[token]
   if (typeof document === 'undefined') {
     return fallback
   }
   const raw = getComputedStyle(document.documentElement).getPropertyValue(token).trim()
-  return raw || fallback
+  return resolveCssColor(raw) || fallback
 }
 
 export function readCardFaceColors(): CardFaceColors {
@@ -66,31 +65,34 @@ export function readCardFaceColors(): CardFaceColors {
   }
 }
 
-const HUE_BANDS: { max: number; from: keyof typeof CARD_COLOR_TOKENS; to: keyof typeof CARD_COLOR_TOKENS }[] = [
-  { max: 26, from: 'bandVioletFrom', to: 'bandVioletTo' },
-  { max: 52, from: 'bandTealFrom', to: 'bandTealTo' },
-  { max: 78, from: 'bandAmberFrom', to: 'bandAmberTo' },
-  { max: Number.POSITIVE_INFINITY, from: 'bandRoseFrom', to: 'bandRoseTo' },
-]
-
-export function hueBandForValue(value: number): CardHueBand {
-  const band = HUE_BANDS.find((entry) => value <= entry.max)!
-  return {
-    from: readToken(CARD_COLOR_TOKENS[band.from]),
-    to: readToken(CARD_COLOR_TOKENS[band.to]),
+/** Flat face fill from bone count — 7 / 5 / 3 / 2 / default 1. */
+export function boneTierColor(bones: number): string {
+  switch (bones) {
+    case 7:
+      return readToken(CARD_COLOR_TOKENS.tier7)
+    case 5:
+      return readToken(CARD_COLOR_TOKENS.tier5)
+    case 3:
+      return readToken(CARD_COLOR_TOKENS.tier3)
+    case 2:
+      return readToken(CARD_COLOR_TOKENS.tier2)
+    default:
+      return readToken(CARD_COLOR_TOKENS.tier1)
   }
 }
 
-/** Tailwind-compatible gradient class tokens for 2D CardTile. */
-export function cardTileGradientClass(value: number): string {
-  if (value <= 26) {
-    return 'from-[var(--color-card-band-violet-from)] to-[var(--color-card-band-violet-to)]'
+/** Tailwind background utility for 2D CardTile. */
+export function cardTileTierClass(bones: number): string {
+  switch (bones) {
+    case 7:
+      return 'bg-card-tier-7'
+    case 5:
+      return 'bg-card-tier-5'
+    case 3:
+      return 'bg-card-tier-3'
+    case 2:
+      return 'bg-card-tier-2'
+    default:
+      return 'bg-card-tier-1'
   }
-  if (value <= 52) {
-    return 'from-[var(--color-card-band-teal-from)] to-[var(--color-card-band-teal-to)]'
-  }
-  if (value <= 78) {
-    return 'from-[var(--color-card-band-amber-from)] to-[var(--color-card-band-amber-to)]'
-  }
-  return 'from-[var(--color-card-band-rose-from)] to-[var(--color-card-band-rose-to)]'
 }

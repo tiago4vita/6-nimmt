@@ -7,7 +7,7 @@ const props = withDefaults(
     ariaLabel: string
     pressed?: boolean | null
     disabled?: boolean
-    variant?: 'ghost' | 'danger' | 'accent'
+    variant?: 'ghost' | 'danger' | 'accent' | 'header'
     size?: 'sm' | 'md'
     title?: string
     type?: 'button' | 'submit'
@@ -33,11 +33,13 @@ const sizeClass = computed(() =>
 const variantClass = computed(() => {
   switch (props.variant) {
     case 'danger':
-      return 'text-danger hover:bg-danger/10'
+      return 'border-border bg-surface-raised text-danger hover:bg-danger/10'
     case 'accent':
-      return 'text-accent hover:bg-accent/10'
+      return 'border-border bg-surface-raised text-accent hover:bg-accent/10'
+    case 'header':
+      return 'border-[color-mix(in_srgb,var(--color-header-text)_22%,transparent)] bg-transparent text-header-text hover:bg-[color-mix(in_srgb,var(--color-header-text)_12%,transparent)]'
     default:
-      return 'text-muted hover:text-text hover:bg-surface'
+      return 'border-border bg-surface-raised text-muted hover:text-text hover:bg-surface'
   }
 })
 
@@ -59,7 +61,7 @@ function onClick(event: MouseEvent): void {
     :aria-disabled="disabled"
     :disabled="disabled"
     :title="tooltip"
-    class="inline-flex items-center justify-center rounded-md border border-border bg-surface-raised transition outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:cursor-not-allowed disabled:opacity-50"
+    class="inline-flex items-center justify-center rounded-md border transition outline-none focus-visible:ring-2 focus-visible:ring-accent/60 disabled:cursor-not-allowed disabled:opacity-50"
     :class="[sizeClass, variantClass]"
     @click="onClick"
   >

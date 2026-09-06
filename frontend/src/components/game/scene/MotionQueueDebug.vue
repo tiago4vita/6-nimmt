@@ -2,7 +2,9 @@
 import { computed } from 'vue'
 
 import type { CardMotionQueueDebug } from '@/composables/useCardMotionQueue'
-import { SCENE_DEBUG } from '@/lib/scene/constants'
+import { useDevMode } from '@/composables/useDevMode'
+
+const { devModeEnabled } = useDevMode()
 
 const props = defineProps<{
   debug: CardMotionQueueDebug
@@ -16,7 +18,7 @@ const isAnimating = computed(() => props.debug.isAnimating.value)
 
 <template>
   <div
-    v-if="SCENE_DEBUG.showAxisIndicator"
+    v-if="devModeEnabled"
     class="pointer-events-none absolute left-2 top-2 z-20 rounded-md border border-border/60 bg-surface-raised/90 px-2 py-1.5 font-mono text-[10px] leading-relaxed text-muted shadow-sm backdrop-blur-sm"
     aria-hidden="true"
   >
