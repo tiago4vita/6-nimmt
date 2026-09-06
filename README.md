@@ -4,7 +4,7 @@ A browser-based multiplayer card game with a tabletop feel, real-time play, and 
 
 Inspired by the classic trick-avoidance game *6 nimmt!* (*Take 6*). **BARE BONES** is an original digital implementation with custom art direction and naming — not an official product of the board-game publisher.
 
-<img width="288" height="180" alt="playing-2" src="https://github.com/user-attachments/assets/09b2c12e-11e5-4c9e-b746-51e797a885c4" />
+<img width="400" height="225" alt="barebones_demo" src="https://github.com/user-attachments/assets/577c96c6-79b3-45a1-af64-fdaea2f6db7b" />
 
 
 ## Current status
