@@ -18,6 +18,7 @@ import { useCardSelection } from '@/composables/useCardSelection'
 import { useGameRoom } from '@/composables/useGameRoom'
 import { useGameShortcuts } from '@/composables/useGameShortcuts'
 import { useGameMotion } from '@/composables/useGameMotion'
+import { useSfx } from '@/composables/useSfx'
 import { useToast } from '@/composables/useToast'
 
 const props = defineProps<{
@@ -26,6 +27,7 @@ const props = defineProps<{
 
 const router = useRouter()
 const { push: pushToast } = useToast()
+const { play, playResults } = useSfx()
 
 const {
   room,
@@ -53,6 +55,7 @@ const showResults = ref(false)
 
 const RESULTS_OVERLAY_DELAY_MS = 2500
 let resultsOverlayHandle: number | null = null
+let resultsSfxPlayed = false
 
 function clearResultsOverlayTimer(): void {
   if (resultsOverlayHandle !== null) {
@@ -199,6 +202,7 @@ async function handleConfirm(): Promise<void> {
     return
   }
 
+  play('card.submit')
   const flightPromise = beginYourFlight(card)
   const failure = await submitSelectedCard()
   await flightPromise
@@ -270,6 +274,7 @@ watch(
     if (nextPhase === 'LOBBY') {
       clearResultsOverlayTimer()
       showResults.value = false
+      resultsSfxPlayed = false
       void router.replace({ name: 'lobby', params: { roomId: props.roomId } })
       return
     }
@@ -285,6 +290,21 @@ watch(
     showResults.value = false
   },
   { immediate: true },
+)
+
+watch(
+  [showResults, () => room.value?.winnerIds, myPlayerId],
+  ([visible, winnerIds, playerId]) => {
+    if (!visible) {
+      resultsSfxPlayed = false
+      return
+    }
+    if (resultsSfxPlayed || !playerId || winnerIds == null) {
+      return
+    }
+    resultsSfxPlayed = true
+    playResults(winnerIds, playerId)
+  },
 )
 
 onUnmounted(() => {

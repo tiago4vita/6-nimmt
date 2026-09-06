@@ -96,6 +96,17 @@ Allowed:
 
 Avoid importing the full utility catalog; keep dependencies lean.
 
+## Sound effects (M6.16)
+
+| Item | Choice |
+|---|---|
+| Engine | **Web Audio API** — singleton in `src/lib/sfx/engine.ts` |
+| Preference | `useLocalStorage('nimmt:sfxEnabled', false)` — shared by `SfxToggle` + `useSfx` |
+| Assets | Static files in `public/sfx/` (MP3 or OGG) |
+| Extra packages | **None** — no Howler, no `@vueuse/sound` |
+
+Spec: [sfx-design.md](./sfx-design.md).
+
 ## GraphQL Code Generation
 
 Use **GraphQL Code Generator** (`@graphql-codegen/cli`) to produce typed operations from the backend schema.

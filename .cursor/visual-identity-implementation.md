@@ -101,7 +101,7 @@ Replaces: Wii / Xbox 360 / CRT / cyan-accent / value-hue-band direction.
 - Gameplay / GraphQL / backend changes
 - New animations (keep existing motion queue)
 - Dark mode toggle
-- SFX
+- Sound effects — see [sfx-design.md](./sfx-design.md) (M6.16)
 - 3+ players
 
 ---

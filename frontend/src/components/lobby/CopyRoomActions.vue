@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Copy, Link2 } from 'lucide-vue-next'
+import { useSfx } from '@/composables/useSfx'
 import { useToast } from '@/composables/useToast'
 
 const props = defineProps<{
@@ -8,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const { push } = useToast()
+const { play } = useSfx()
 
 async function copy(text: string, label: string): Promise<void> {
   try {
@@ -19,10 +21,12 @@ async function copy(text: string, label: string): Promise<void> {
 }
 
 function copyCode(): void {
+  play('ui.click')
   void copy(props.code, 'Room code')
 }
 
 function copyLink(): void {
+  play('ui.click')
   const url = `${window.location.origin}/?join=${props.code}`
   void copy(url, 'Invite link')
 }

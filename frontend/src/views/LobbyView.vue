@@ -17,6 +17,7 @@ import type { MutationResult } from '@/graphql/types'
 import { isPlayPhase } from '@/graphql/types'
 import { useDisplayName } from '@/composables/useDisplayName'
 import { useGameRoom } from '@/composables/useGameRoom'
+import { useSfx } from '@/composables/useSfx'
 import { useToast } from '@/composables/useToast'
 import { SHOWCASE_MAX_PLAYERS } from '@/lib/showcase'
 
@@ -27,6 +28,7 @@ const props = defineProps<{
 const router = useRouter()
 const { push: pushToast } = useToast()
 const { rememberDisplayName } = useDisplayName()
+const { play } = useSfx()
 
 const {
   room,
@@ -109,6 +111,7 @@ async function handleSubmitTimeoutChange(): Promise<void> {
 }
 
 async function handleStartGame(): Promise<void> {
+  play('ui.click')
   if (!canStart.value) {
     return
   }
@@ -125,6 +128,7 @@ async function handleStartGame(): Promise<void> {
 }
 
 async function confirmLeave(): Promise<void> {
+  play('ui.click')
   isLeaving.value = true
   try {
     const errors = await leaveRoom()
@@ -140,6 +144,7 @@ async function confirmLeave(): Promise<void> {
 }
 
 async function saveDisplayName(): Promise<void> {
+  play('ui.click')
   const trimmed = editedName.value.trim()
   if (!trimmed) {
     pushToast('Display name cannot be empty', 'error')

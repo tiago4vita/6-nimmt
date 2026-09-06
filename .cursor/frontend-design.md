@@ -16,7 +16,7 @@ Single source of truth for **screen-level UX**, visual language, motion, and acc
 | Motion | **Moderate** — existing motion queue + hand lift; respect `prefers-reduced-motion` |
 | End-of-game | **Overlay on GameView**; `/results` deep-link alias |
 | Icons | **Lucide Vue** (`lucide-vue-next`) |
-| Audio | **Optional SFX**, muted by default (deferred) |
+| Audio | **Optional SFX**, muted by default — see [sfx-design.md](./sfx-design.md) |
 
 **Retired:** Wii / Xbox 360 light theme, cyan accent, CRT scanlines, value-based hue gradients, bone-tier particle effects.
 
@@ -142,10 +142,27 @@ All honor `prefers-reduced-motion`.
 
 ---
 
+## Audio (SFX)
+
+Full spec: **[sfx-design.md](./sfx-design.md)**.
+
+| Rule | Detail |
+|---|---|
+| Default | **Off** — `nimmt:sfxEnabled` in localStorage |
+| Toggle | Header `SfxToggle` (Lucide volume icon) |
+| Engine | Web Audio API — typed catalog, no extra npm deps |
+| UI | Dry woody clicks (`ui.click`) |
+| Cards | Soft whoosh on select; fuller whoop on submit (`card.select`, `card.submit`) |
+| End game | Generic win/lose stings when results overlay appears |
+| Layering | Triggers in composables/views only — **not** in Three.js scene code |
+
+---
+
 ## Cross-references
 
 - Tokens: [design-tokens.md](./design-tokens.md)
 - Implementation plan: [visual-identity-implementation.md](./visual-identity-implementation.md)
+- Sound design: [sfx-design.md](./sfx-design.md)
 - Vue patterns: [frontend-patterns.md](./frontend-patterns.md)
 - UX audit backlog: [ux-audit.md](./ux-audit.md)
 - Roadmap slice: [roadmap.md](./roadmap.md#m615--visual-identity-refresh-warm-editorial)

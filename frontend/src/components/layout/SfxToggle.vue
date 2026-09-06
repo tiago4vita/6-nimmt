@@ -1,25 +1,33 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useLocalStorage } from '@vueuse/core'
 import { Volume2, VolumeX } from 'lucide-vue-next'
 
 import IconButton from '@/components/layout/IconButton.vue'
+import { useSfx } from '@/composables/useSfx'
 
-const sfxEnabled = useLocalStorage('nimmt:sfxEnabled', false)
+const { enabled, unlock, play } = useSfx()
 
-const icon = computed(() => (sfxEnabled.value ? Volume2 : VolumeX))
+const icon = computed(() => (enabled.value ? Volume2 : VolumeX))
 const label = computed(() =>
-  sfxEnabled.value ? 'Sound effects on' : 'Sound effects off',
+  enabled.value ? 'Sound effects on' : 'Sound effects off',
 )
+
+function toggle(): void {
+  enabled.value = !enabled.value
+  if (enabled.value) {
+    unlock()
+    play('ui.click')
+  }
+}
 </script>
 
 <template>
   <IconButton
     :icon="icon"
     :ariaLabel="label"
-    :pressed="sfxEnabled"
+    :pressed="enabled"
     :title="label"
     variant="header"
-    @click="sfxEnabled = !sfxEnabled"
+    @click="toggle"
   />
 </template>

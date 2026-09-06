@@ -1,5 +1,6 @@
 import { computed, ref, watch, type Ref } from 'vue'
 
+import { useSfx } from '@/composables/useSfx'
 import type { Card, GameError, GameErrorCode } from '@/graphql/types'
 
 export interface SubmitFailure {
@@ -25,6 +26,7 @@ export function useCardSelection({
   onSubmit,
   timeoutMs = DEFAULT_TIMEOUT_MS,
 }: UseCardSelectionOptions) {
+  const { play } = useSfx()
   const selectedCardId = ref<string | null>(null)
   const optimisticSelectedId = ref<string | null>(null)
   const isSubmitting = ref(false)
@@ -63,6 +65,7 @@ export function useCardSelection({
       return
     }
     selectedCardId.value = cardId
+    play('card.select')
   }
 
   function clearSelection(): void {
