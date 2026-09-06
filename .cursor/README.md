@@ -83,7 +83,7 @@ Portfolio-facing summary also lives in the root [README.md](../README.md).
 | M3 GraphQL API | Done |
 | M4 Frontend core | Done |
 | M5 Playable MVP | Done |
-| M6 Polish | In progress — **M6.15 visual identity** ([design-tokens.md](./design-tokens.md)) |
+| M6 Polish | In progress — **M6.15 visual identity** ([design-tokens.md](./design-tokens.md)), **M6.16 SFX** ([sfx-design.md](./sfx-design.md)) |
 | M7 Post-MVP | Backlog |
 
 Partial implementations and blockers: [architecture-overview.md](./architecture-overview.md#known-gaps--mvp-blockers).
@@ -95,6 +95,7 @@ Partial implementations and blockers: [architecture-overview.md](./architecture-
 | [roadmap.md](./roadmap.md) | Milestones, task checklist, sprint order | Planning work |
 | [design-tokens.md](./design-tokens.md) | Colors, typography, card tiers, assets | Styling, M6.15 visual refresh |
 | [visual-identity-implementation.md](./visual-identity-implementation.md) | Phased implementation + agent prompt | Executing visual identity work |
+| [sfx-design.md](./sfx-design.md) | SFX catalog, architecture, agent prompt | Implementing sound effects (M6.16) |
 | [architecture-overview.md](./architecture-overview.md) | System boundaries, data flow | Starting any feature |
 | [frontend-stack.md](./frontend-stack.md) | Frontend tooling | Setup, dependencies |
 | [frontend-patterns.md](./frontend-patterns.md) | Vue composables, URQL | Components, client logic |

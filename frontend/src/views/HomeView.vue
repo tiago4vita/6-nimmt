@@ -11,6 +11,7 @@ import { CREATE_ROOM, JOIN_ROOM } from '@/graphql/operations'
 import type { MutationResult } from '@/graphql/types'
 import { useDisplayName } from '@/composables/useDisplayName'
 import { useGuestSession } from '@/composables/useGuestSession'
+import { useSfx } from '@/composables/useSfx'
 import { useToast } from '@/composables/useToast'
 import { SHOWCASE_MAX_PLAYERS } from '@/lib/showcase'
 
@@ -19,6 +20,7 @@ const route = useRoute()
 const { isReady, isLoading: sessionLoading } = useGuestSession()
 const { push: pushToast } = useToast()
 const { displayName, rememberDisplayName } = useDisplayName()
+const { play } = useSfx()
 const joinCode = ref(typeof route.query.join === 'string' ? route.query.join.toUpperCase() : '')
 const isSubmitting = ref(false)
 
@@ -49,6 +51,7 @@ async function handleMutationResult(
 }
 
 async function createRoom(): Promise<void> {
+  play('ui.click')
   if (!canCreate.value) {
     pushToast('Enter your name to create a duel', 'error')
     return
@@ -72,6 +75,7 @@ async function createRoom(): Promise<void> {
 }
 
 async function joinRoom(code = joinCode.value): Promise<void> {
+  play('ui.click')
   if (!canJoin.value && code.length === 6) {
     if (!displayName.value.trim()) {
       pushToast('Enter your name to join', 'error')

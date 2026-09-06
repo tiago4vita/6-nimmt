@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Card } from '@/graphql/types'
+import { useSfx } from '@/composables/useSfx'
 
 defineProps<{
   card: Card | null
@@ -10,6 +11,18 @@ const emit = defineEmits<{
   confirm: []
   cancel: []
 }>()
+
+const { play } = useSfx()
+
+function onConfirm(): void {
+  play('ui.click')
+  emit('confirm')
+}
+
+function onCancel(): void {
+  play('ui.click')
+  emit('cancel')
+}
 </script>
 
 <template>
@@ -24,7 +37,7 @@ const emit = defineEmits<{
       class="btn btn-primary"
       :disabled="isSubmitting"
       :aria-pressed="true"
-      @click="emit('confirm')"
+      @click="onConfirm"
     >
       <span v-if="isSubmitting">Playing…</span>
       <span v-else>Play card {{ card.value }}</span>
@@ -33,7 +46,7 @@ const emit = defineEmits<{
       type="button"
       class="btn btn-secondary"
       :disabled="isSubmitting"
-      @click="emit('cancel')"
+      @click="onCancel"
     >
       Cancel
     </button>

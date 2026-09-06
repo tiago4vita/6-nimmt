@@ -9,7 +9,7 @@
 - **Moderate motion** — existing queue + hand lift; honor `prefers-reduced-motion`
 - **Composition API** — all new components use `<script setup lang="ts">`
 
-> Screen-level UX lives in [frontend-design.md](./frontend-design.md). **Tokens:** [design-tokens.md](./design-tokens.md). **Visual refresh plan:** [visual-identity-implementation.md](./visual-identity-implementation.md).
+> Screen-level UX lives in [frontend-design.md](./frontend-design.md). **Tokens:** [design-tokens.md](./design-tokens.md). **Visual refresh plan:** [visual-identity-implementation.md](./visual-identity-implementation.md). **SFX:** [sfx-design.md](./sfx-design.md).
 
 ## Directory Structure
 
@@ -25,6 +25,7 @@ frontend/src/
     client.ts             # URQL + graphql-ws; no operations called yet
   lib/
     guest-session.ts      # Reads 6nimmt_guest from localStorage; does NOT mint sessions
+    sfx/                  # M6.16 — types, catalog, engine (no Vue imports)
 ```
 
 **Gap:** Nothing writes to `localStorage` until M4 `useGuestSession` calls GraphQL `ensureGuestSession`.
@@ -44,6 +45,7 @@ frontend/src/
     useGuestSession.ts
     useGameRoom.ts
     useCardSelection.ts
+    useSfx.ts               # Typed play('ui.click'); reads nimmt:sfxEnabled
   components/
     layout/
       AppShell.vue
@@ -130,6 +132,18 @@ Scoped keyboard handler for `GameView`:
 - `Esc` → clear selection, or open leave confirm, or cancel dialog
 
 Implement with `@vueuse/core` (`useMagicKeys`) or native `keydown` listener; tear down on unmount.
+
+### `useSfx` (M6.16)
+
+```typescript
+// Responsibilities:
+// - Read/write nimmt:sfxEnabled (same key as SfxToggle)
+// - play(event: SfxEvent) — no-op when disabled
+// - unlock() — resume AudioContext after user gesture (browser autoplay policy)
+// - Do NOT call from Three.js scene components
+```
+
+Trigger map and event catalog: [sfx-design.md](./sfx-design.md#trigger-map).
 
 ## URQL Usage Patterns
 
@@ -283,6 +297,7 @@ All animations are short (≤ 400ms) and respect `@media (prefers-reduced-motion
 
 - Nielsen heuristic backlog: [ux-audit.md](./ux-audit.md)
 - Screen UX, wireframes, motion catalog: [frontend-design.md](./frontend-design.md)
+- Sound design: [sfx-design.md](./sfx-design.md)
 - Stack choices: [frontend-stack.md](./frontend-stack.md)
 - GraphQL operations: [graphql-schema.md](./graphql-schema.md)
 - Guest session: [auth.md](./auth.md)

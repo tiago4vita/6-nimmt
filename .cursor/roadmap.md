@@ -2,7 +2,7 @@
 
 Task tracker for moving from **dev scaffold → playable MVP → portfolio polish**. Architecture and rules live in the other `.cursor/` docs — this file is the execution order.
 
-**Last reviewed:** 2026-09-06 (visual identity refresh — warm editorial palette)
+**Last reviewed:** 2026-09-06 (visual identity + sound design docs)
 
 ---
 
@@ -10,14 +10,15 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 
 | Area | Status | Notes |
 |---|---|---|
-| Documentation | ✅ Updated | New [design-tokens.md](./design-tokens.md), [visual-identity-implementation.md](./visual-identity-implementation.md) |
+| Documentation | ✅ Updated | [design-tokens.md](./design-tokens.md), [visual-identity-implementation.md](./visual-identity-implementation.md), [sfx-design.md](./sfx-design.md) |
 | M6 3D scene + motion | ✅ Shipped | TresJS table, motion queue, resolve animations, bone pop |
 | **M6.15 Visual identity** | 🔵 **Current focus** | Replace Wii/CRT/cyan with `#7D3623` / `#FFE7E0`; bone-tier card colors; Logotype |
+| **M6.16 Sound design** | ✅ Shipped | Web Audio + typed catalog; woody UI, card whoops, win/lose stings |
 | E2E playable demo (M5) | ✅ Complete | Manual two-browser QA passed |
 
 **Git:** `frontend/new-visuals` — in-progress token + asset work; assets in `frontend/public/` (`Logotype.svg`, `Logo.svg`, `favicon.ico`).
 
-**Next up:** Execute [visual-identity-implementation.md](./visual-identity-implementation.md) phases 1–6.
+**Next up:** Finish remaining M6.15 visual QA if any, then optional Postgres/CI (M7).
 
 **Retired direction:** Wii / Xbox 360 off-white, cyan accent (`#0099cc`), CRT scanlines, value-hue gradients, `boneTierEffects` particles.
 
@@ -35,7 +36,7 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 | pytest-asyncio loop scope            | Deprecation warning — set `asyncio_default_fixture_loop_scope` in pyproject           | Dev hygiene                                              |
 
 
-**Completeness note:** **Playable MVP (M5) met.** Remaining portfolio work: **M6.15 visual identity** + optional Postgres/CI.
+**Completeness note:** **Playable MVP (M5) met.** Remaining portfolio work: **M6.15 visual identity**, **M6.16 sound design**, optional Postgres/CI.
 
 ---
 
@@ -377,6 +378,77 @@ DONE WHEN: visual-identity-implementation.md verification checklist passes.
 
 ---
 
+### M6.16 — Sound design
+
+**Spec:** [sfx-design.md](./sfx-design.md)  
+**Prerequisite:** `SfxToggle.vue` + `nimmt:sfxEnabled` already shipped; playback not wired.
+
+#### 6.16.1 Engine foundation
+- [x] `lib/sfx/types.ts` — `SfxEvent` union
+- [x] `lib/sfx/catalog.ts` — paths, volumes, random pools
+- [x] `lib/sfx/engine.ts` — Web Audio singleton (preload, play, unlock)
+- [x] `composables/useSfx.ts`
+- [x] Assets in `frontend/public/sfx/` (ui/, card/, game/)
+
+#### 6.16.2 Toggle & preference
+- [x] `SfxToggle.vue` → `unlock()` when enabling
+- [x] Single shared `nimmt:sfxEnabled` ref (toggle + composable)
+
+#### 6.16.3 UI clicks (woody)
+- [x] `HomeView` — create/join
+- [x] `LobbyView` — save name, start game
+- [x] `CardConfirmBar`, `ResultsOverlay`, `CopyRoomActions`
+
+#### 6.16.4 Card sounds
+- [x] `useCardSelection.selectCard` → `card.select`
+- [x] `GameView.handleConfirm` → `card.submit`
+
+#### 6.16.5 End game
+- [x] `GameView` — `game.win` / `game.lose` when results overlay shows
+
+#### 6.16.6 QA
+- [x] Default muted; toggle persists; build passes
+- [x] Checklist in [sfx-design.md](./sfx-design.md#verification-checklist)
+
+**M6.16 done when:** Verification checklist passes; no SFX imports under `components/game/scene/`.
+
+---
+
+### Agent prompt — sound design (M6.16)
+
+Copy to a new agent session after M6.15 (or in parallel if visuals are stable):
+
+```
+You are implementing BARE BONES sound effects (M6.16).
+
+READ FIRST (mandatory):
+- .cursor/sfx-design.md
+- .cursor/frontend-patterns.md
+
+SOUND RULES (locked):
+- ui.click — dry woody tap (2+ random variants), vol ~0.35
+- card.select — soft whoosh, vol ~0.45
+- card.submit — fuller whoop on confirm, vol ~0.55
+- game.win / game.lose — generic stings on results overlay, vol ~0.60
+- Default OFF — nimmt:sfxEnabled (SfxToggle); win if myPlayerId ∈ winnerIds
+
+ARCHITECTURE:
+- src/lib/sfx/{types,catalog,engine}.ts + composables/useSfx.ts
+- public/sfx/{ui,card,game}/
+- Web Audio only — NO new npm packages
+- NEVER import sfx from Three.js scene code
+
+TRIGGERS: see sfx-design.md trigger map (HomeView, LobbyView, useCardSelection, GameView, SfxToggle unlock)
+
+CONSTRAINTS: No game logic / GraphQL / motion changes. Silent fail if asset missing.
+
+ORDER: lib/sfx → useSfx → SfxToggle → ui.click → card sounds → win/lose → npm run build
+
+DONE WHEN: sfx-design.md verification checklist passes.
+```
+
+---
+
 ### Legacy M6 track (3D scene — shipped)
 
 <details>
@@ -632,11 +704,12 @@ Fold into **M6.15.5** — contrast check on new tier face colors (WCAG AA).
 ### 6.14 — Deferred (post-showcase)
 
 - Card back art (custom texture per deck)
-- SFX — Web Audio API, `sfxEnabled` in localStorage, assets in `public/sfx/`
 - Dark theme toggle (if ever — not in v1 showcase)
 - 3+ player support (re-enable when visuals scale)
 - README quick-start verified on clean machine
 - Postgres spot-check (`M2.7`)
+
+**Moved to M6.16:** SFX — see [sfx-design.md](./sfx-design.md).
 
 ---
 
@@ -673,6 +746,7 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 | **S5** | M4.1–4.5           | ✅ Done on branch   | Router, session, Home/Lobby/Game wired to GraphQL |
 | **S6** | M5 QA + fixes      | ✅ Done             | Two-browser MVP verified manually                 |
 | **S7** | M6.15 visual identity | 🔵 **In progress** | Warm editorial tokens + Logotype + bone-tier cards |
+| **S7b** | M6.16 sound design | ✅ Done | Web Audio SFX; woody UI + card whoops + win/lose |
 | **S8** | M2.7 + M7 picks    | ⬜ Pending          | Postgres persistence + extras                     |
 
 
@@ -681,6 +755,7 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 1. **M6.15.1** — tokenize `style.css` + `cardColors.ts` per [design-tokens.md](./design-tokens.md).
 2. **M6.15.3** — `AppShell` + `HomeView` with `/Logotype.svg`.
 3. Run agent prompt in [M6.15 section](#m615--visual-identity-refresh-warm-editorial--current-focus) or [visual-identity-implementation.md](./visual-identity-implementation.md).
+4. Then [M6.16 sound design](#m616--sound-design) — agent prompt in [sfx-design.md](./sfx-design.md).
 
 ---
 
@@ -726,6 +801,7 @@ domain (M1) ✅
 | Postgres tables                 | [database-schema.md](./database-schema.md)                                      |
 | Local run & demo                | [deployment.md](./deployment.md)                                                |
 | UI screens & motion             | [frontend-design.md](./frontend-design.md)                                      |
+| Sound design                    | [sfx-design.md](./sfx-design.md)                                                |
 | UX heuristic backlog            | [ux-audit.md](./ux-audit.md)                                                    |
 | Vue conventions                 | [frontend-patterns.md](./frontend-patterns.md)                                  |
 | Doc index                       | [README.md](./README.md)                                                        |

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { Trophy } from 'lucide-vue-next'
 import type { GameFinishReason, PlayerPublic } from '@/graphql/types'
+import { useSfx } from '@/composables/useSfx'
 
 const props = defineProps<{
   open: boolean
@@ -17,6 +18,18 @@ const emit = defineEmits<{
   rematch: []
   leave: []
 }>()
+
+const { play } = useSfx()
+
+function onRematch(): void {
+  play('ui.click')
+  emit('rematch')
+}
+
+function onLeave(): void {
+  play('ui.click')
+  emit('leave')
+}
 
 interface RankedPlayer {
   player: PlayerPublic
@@ -181,7 +194,7 @@ const winnerIconClass = computed(() =>
           type="button"
           class="btn btn-primary"
           :disabled="isRematching || isLeaving"
-          @click="emit('rematch')"
+          @click="onRematch"
         >
           {{ isRematching ? 'Returning…' : 'Rematch' }}
         </button>
@@ -189,7 +202,7 @@ const winnerIconClass = computed(() =>
           type="button"
           class="btn btn-secondary"
           :disabled="isRematching || isLeaving"
-          @click="emit('leave')"
+          @click="onLeave"
         >
           {{ isLeaving ? 'Leaving…' : 'Exit room' }}
         </button>

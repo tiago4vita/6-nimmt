@@ -11,6 +11,7 @@ import PlayerStrip from '@/components/game/PlayerStrip.vue'
 import ResultsOverlay from '@/components/game/ResultsOverlay.vue'
 import { isFinishedPhase, isPlayPhase } from '@/graphql/types'
 import { useGameRoom } from '@/composables/useGameRoom'
+import { useSfx } from '@/composables/useSfx'
 import { useToast } from '@/composables/useToast'
 
 const props = defineProps<{
@@ -19,9 +20,11 @@ const props = defineProps<{
 
 const router = useRouter()
 const { push: pushToast } = useToast()
+const { playResults } = useSfx()
 const showResults = ref(true)
 const isRematching = ref(false)
 const isLeaving = ref(false)
+let resultsSfxPlayed = false
 
 const {
   room,
@@ -39,12 +42,29 @@ watch(
   phase,
   (nextPhase) => {
     if (nextPhase === 'LOBBY') {
+      resultsSfxPlayed = false
       void router.replace({ name: 'lobby', params: { roomId: props.roomId } })
       return
     }
     if (nextPhase && isPlayPhase(nextPhase) && !isFinishedPhase(nextPhase)) {
       void router.replace({ name: 'play', params: { roomId: props.roomId } })
     }
+  },
+  { immediate: true },
+)
+
+watch(
+  [showResults, () => room.value?.winnerIds, myPlayerId],
+  ([visible, winnerIds, playerId]) => {
+    if (!visible) {
+      resultsSfxPlayed = false
+      return
+    }
+    if (resultsSfxPlayed || !playerId || winnerIds == null) {
+      return
+    }
+    resultsSfxPlayed = true
+    playResults(winnerIds, playerId)
   },
   { immediate: true },
 )
