@@ -84,11 +84,6 @@ export const STAGING = {
   },
 } as const
 
-/** Dev-only scene overlays — axis gizmo, bounds, etc. */
-export const SCENE_DEBUG = {
-  showAxisIndicator: import.meta.env.DEV,
-} as const
-
 export function playfieldCenter(): [number, number, number] {
   return [
     PLAYFIELD.leftX + PLAYFIELD.width / 2,

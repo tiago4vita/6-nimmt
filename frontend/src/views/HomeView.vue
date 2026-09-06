@@ -109,7 +109,7 @@ function onCodeComplete(code: string): void {
 </script>
 
 <template>
-  <AppShell>
+  <AppShell main-align="center">
     <LoadingShell
       v-if="sessionLoading || !isReady"
       variant="home"
@@ -118,8 +118,8 @@ function onCodeComplete(code: string): void {
 
     <div v-else class="mx-auto flex max-w-md flex-col gap-6">
       <div class="text-center">
-        <h1 class="text-3xl font-semibold tracking-tight text-text">BARE BONES</h1>
-        <p class="mt-2 text-sm text-muted">
+        <img src="/Logotype.svg" alt="BARE BONES" class="mx-auto h-16 w-auto" />
+        <p class="mt-3 text-sm font-normal text-muted">
           Trick-avoidance card duel — create a room or join with a code. No account needed.
         </p>
       </div>

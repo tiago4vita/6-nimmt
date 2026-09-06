@@ -9,7 +9,7 @@ defineProps<{
 </script>
 
 <template>
-  <div class="rounded-xl border border-border bg-felt p-4">
+  <div class="rounded-xl border border-border bg-surface p-4">
     <div class="grid gap-3">
       <GameRow
         v-for="row in rows"

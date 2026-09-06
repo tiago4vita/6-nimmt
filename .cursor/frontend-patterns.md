@@ -4,12 +4,12 @@
 
 - **Subscription as source of truth** for in-game UI — do not duplicate live state in Pinia
 - **Optimistic UI** only for `submitCard` (disable hand, show selection until subscription confirms)
-- **Dark table-top, vibrant cards** — dark chrome with a moody felt background; color reserved for the play surface so card faces carry the visual energy
-- **Desktop-first** — mobile gets a `MobileDesktopNotice` banner; no responsive board layout in v1
-- **Moderate motion micro-delights** — hover lift, staggered resolve, progress pulse; everything respects `prefers-reduced-motion`
+- **Warm editorial palette** — light body (`#FFE7E0`), dark header and type (`#7D3623`); card faces use **bone-tier solids** (see [design-tokens.md](./design-tokens.md))
+- **Desktop-first** — mobile gets a `MobileDesktopNotice` banner
+- **Moderate motion** — existing queue + hand lift; honor `prefers-reduced-motion`
 - **Composition API** — all new components use `<script setup lang="ts">`
 
-> Screen-level UX (wireframes, heuristics, motion catalog, SFX, accessibility) lives in [frontend-design.md](./frontend-design.md). This file covers Vue-side conventions: directory layout, composables, URQL usage, and component contracts.
+> Screen-level UX lives in [frontend-design.md](./frontend-design.md). **Tokens:** [design-tokens.md](./design-tokens.md). **Visual refresh plan:** [visual-identity-implementation.md](./visual-identity-implementation.md).
 
 ## Directory Structure
 
@@ -192,8 +192,10 @@ Never optimistically remove the card from `myHand` — wait for server view to a
 
 Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 'md'`
 
-- Display: large number, small bone indicator (minimal icon or dots)
-- Tailwind: border, subtle shadow, `transition-opacity` on disabled
+- Display: large **bold** number, small bone count
+- Background: `boneTierColor(card.bones)` — flat solid from [design-tokens.md](./design-tokens.md)
+- Text: `--color-card-face-text` (`#FFE7E0`)
+- Selection ring: `--color-dark`
 
 ### `GameBoard.vue`
 
@@ -220,27 +222,19 @@ Props: `card: Card`, `selected?: boolean`, `disabled?: boolean`, `size?: 'sm' | 
 - **Rematch** (primary): `returnToLobby` → navigate to lobby
 - **Exit room** (secondary): `leaveRoom` → home
 
-## Tailwind Design Tokens
+## Tailwind design tokens
 
-Dark-first table-top palette. Define in `src/style.css` (alongside `@import "tailwindcss"`):
+Canonical definitions: **[design-tokens.md](./design-tokens.md)**. Implement in `src/style.css` (`:root` + `@theme`).
 
-```css
-:root {
-  --color-surface: #0c0c0f;        /* App background — near-black */
-  --color-surface-raised: #16161a; /* Panels, player strip */
-  --color-felt: #1a2e1a;           /* Subtle green tint behind board */
-  --color-border: #2a2a32;
-  --color-text: #f4f4f5;
-  --color-muted: #a1a1aa;
-  --color-accent: #d4a017;         /* Amber — table lamp / CTA accent */
-  --color-danger: #ef4444;         /* Penalties, errors */
-  --color-success: #22c55e;        /* Submitted, connected */
-}
-```
+Key utilities after tokenization:
 
-Typography: **Inter** via `@fontsource/inter`. Use `font-variant-numeric: tabular-nums` for card values and scores so digits don't jitter during count-up animations. No more than two font sizes in the in-game HUD.
+- `bg-surface` / `text-text` — light page, dark copy
+- `bg-[var(--color-header-bg)]` / `text-[var(--color-header-text)]` — header bar
+- Card tiers: `bg-[var(--color-card-tier-N)]` via `boneTierColor()` helper
 
-Card faces use **value-driven hue bands** (blue-violet → teal → amber → rose, ascending) with bone intensity as a severity cue. Full chroma rules and indicator styles live in [frontend-design.md](./frontend-design.md#card-chroma-vibrant-value-driven).
+Typography: **Inter** 400 + 600. Tabular numerals on scores.
+
+**Do not use:** value-based gradient bands, cyan `#0099cc`, CRT classes, Wii-era off-white `#f2f0eb`.
 
 ## Error & Loading UX
 
@@ -277,7 +271,7 @@ All animations are short (≤ 400ms) and respect `@media (prefers-reduced-motion
 - Color is never the sole signal — pair connection/submission dots with text or icons; penalties surface a number alongside the red wash
 - Card numbers must meet WCAG AA contrast against their gradient face (verify each hue band during implementation)
 - Keyboard: `Tab` cycles the hand; `1`–`N` selects; `Enter` confirms; `Esc` clears selection or opens leave confirm
-- Focus rings: amber accent at 60% opacity, visible on every dark surface
+- Focus rings: dark accent at 60% opacity on light surfaces
 
 ## Testing (When Added)
 

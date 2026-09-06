@@ -3,11 +3,10 @@ import { AxesHelper } from 'three'
 import { ScreenSizer, ScreenSpace } from '@tresjs/cientos'
 import { markRaw, onBeforeUnmount } from 'vue'
 
-import {
-  PLAYFIELD,
-  SCENE_DEBUG,
-  TABLE,
-} from '@/lib/scene/constants'
+import { useDevMode } from '@/composables/useDevMode'
+import { PLAYFIELD, TABLE } from '@/lib/scene/constants'
+
+const { devModeEnabled } = useDevMode()
 
 const CORNER_GIZMO_SIZE = 1.15
 const WORLD_ORIGIN_SIZE = 2.4
@@ -31,7 +30,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <template v-if="SCENE_DEBUG.showAxisIndicator">
+  <template v-if="devModeEnabled">
     <!-- Viewport corner — world axes orientation (screen-fixed position) -->
     <ScreenSpace :left="14" :bottom="14" :depth="0">
       <ScreenSizer>

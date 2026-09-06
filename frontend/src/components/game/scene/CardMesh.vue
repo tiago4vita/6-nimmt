@@ -16,10 +16,6 @@ import type { Card } from '@/graphql/types'
 import { useCardJiggle } from '@/composables/useCardJiggle'
 import { useCardLift, type CardLiftTier } from '@/composables/useCardLift'
 import {
-  attachBoneTierEffects,
-  type BoneTierEffectHandle,
-} from '@/lib/scene/boneTierEffects'
-import {
   createCardBackTexture,
   createCardFaceTexture,
   disposeCardFaceTexture,
@@ -63,17 +59,6 @@ const root = shallowRef<Group | null>(null)
 const hovered = ref(false)
 const selectionRing = shallowRef<LineSegments | null>(null)
 const selectionRingMaterial = shallowRef<LineBasicMaterial | null>(null)
-let faceMeshRef: Mesh | null = null
-let boneTierEffects: BoneTierEffectHandle | null = null
-
-function syncBoneTierEffects(group: Group, bones: number): void {
-  boneTierEffects?.dispose()
-  boneTierEffects = null
-  if (!faceMeshRef || props.showBackOnly) {
-    return
-  }
-  boneTierEffects = attachBoneTierEffects(group, faceMeshRef, bones)
-}
 
 const CARD_MATERIAL = {
   alphaTest: 0.08,
@@ -200,13 +185,11 @@ const { jiggle, triggerJiggle } = useCardJiggle({
 
 function buildCardGroup(): Group {
   const group = markRaw(new Group())
-  faceMeshRef = null
 
   if (props.orientation === 'hand') {
     const face = markRaw(new Mesh(cardPlane, faceMaterial))
     face.position.z = halfDepth + FACE_BIAS
     face.renderOrder = 1
-    faceMeshRef = face
 
     const back = markRaw(new Mesh(cardPlane, backMaterial))
     back.position.z = -halfDepth
@@ -246,7 +229,6 @@ function buildCardGroup(): Group {
       face.rotation.x = Math.PI / 2
       face.position.y = -halfDepth - FACE_BIAS
       face.renderOrder = 1
-      faceMeshRef = face
 
       const back = markRaw(new Mesh(cardPlane, backMaterial))
       back.rotation.x = -Math.PI / 2
@@ -260,7 +242,6 @@ function buildCardGroup(): Group {
     face.rotation.x = -Math.PI / 2
     face.position.y = halfDepth + FACE_BIAS
     face.renderOrder = 1
-    faceMeshRef = face
 
     const back = markRaw(new Mesh(cardPlane, backMaterial))
     back.rotation.x = Math.PI / 2
@@ -275,7 +256,6 @@ function buildCardGroup(): Group {
 
   applyTransform(group)
   applyVisualState(group)
-  syncBoneTierEffects(group, props.card.bones)
   return group
 }
 
@@ -287,9 +267,6 @@ watch(
     disposeCardFaceTexture(faceMaterial.map)
     faceMaterial.map = createCardFaceTexture(value, bones)
     faceMaterial.needsUpdate = true
-    if (root.value) {
-      syncBoneTierEffects(root.value, bones)
-    }
   },
 )
 
@@ -352,7 +329,6 @@ function handlePointerLeave(): void {
 
 onBeforeUnmount(() => {
   document.body.style.cursor = ''
-  boneTierEffects?.dispose()
   disposeCardFaceTexture(faceMaterial.map)
   faceMaterial.dispose()
   backMaterial.dispose()

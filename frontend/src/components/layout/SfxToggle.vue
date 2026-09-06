@@ -19,6 +19,7 @@ const label = computed(() =>
     :ariaLabel="label"
     :pressed="sfxEnabled"
     :title="label"
+    variant="header"
     @click="sfxEnabled = !sfxEnabled"
   />
 </template>

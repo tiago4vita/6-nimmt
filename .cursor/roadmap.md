@@ -2,38 +2,24 @@
 
 Task tracker for moving from **dev scaffold → playable MVP → portfolio polish**. Architecture and rules live in the other `.cursor/` docs — this file is the execution order.
 
-**Last reviewed:** 2026-05-26 (M6 visual overhaul — Balatro/Wii direction)
+**Last reviewed:** 2026-09-06 (visual identity refresh — warm editorial palette)
 
 ---
 
 ## Current State
 
+| Area | Status | Notes |
+|---|---|---|
+| Documentation | ✅ Updated | New [design-tokens.md](./design-tokens.md), [visual-identity-implementation.md](./visual-identity-implementation.md) |
+| M6 3D scene + motion | ✅ Shipped | TresJS table, motion queue, resolve animations, bone pop |
+| **M6.15 Visual identity** | 🔵 **Current focus** | Replace Wii/CRT/cyan with `#7D3623` / `#FFE7E0`; bone-tier card colors; Logotype |
+| E2E playable demo (M5) | ✅ Complete | Manual two-browser QA passed |
 
-| Area                          | Status               | Notes                                                                                  |
-| ----------------------------- | -------------------- | -------------------------------------------------------------------------------------- |
-| Documentation                 | ✅ Complete           | `.cursor/` aligned with shipped branch behavior                                        |
-| Docker Compose                | ✅ Complete           | Postgres 16, Redis 7, backend, frontend                                                |
-| Domain game engine (M1)       | ✅ Complete           | `backend/app/domain/` — pure rules, `bones` nomenclature; **31 domain tests**          |
-| Infrastructure layer (M2)     | ✅ Complete           | Redis sessions, rooms, game loop, pub/sub, timers                                      |
-| GraphQL API (M3)              | ✅ Complete           | Queries, mutations, subscriptions, view builders; **11 GraphQL tests**                 |
-| Backend tests                 | ✅ Complete           | **82 pytest pass** against real Redis (DB 15)                                          |
-| Backend entry                 | ✅ Complete           | `main.py` — Redis lifespan, pub/sub listener, full Strawberry schema + WS auth context |
-| OpenAPI reference             | ✅ Complete           | REST health + documented GraphQL contract at `/docs`, `/openapi.yaml`                  |
-| PostgreSQL persistence        | ⬜ Not started        | `DATABASE_URL` in config; SQLModel/Alembic declared but unused at runtime              |
-| Frontend core (M4)            | ✅ Complete on branch | Router, composables, Home/Lobby/Game views, GraphQL operations, dark theme             |
-| Frontend build                | ✅ Complete           | `npm run build` passes with game UI                                                    |
-| M6 UX (Sprints A–C)           | ✅ Complete           | Select→confirm, countdown, HUD, shortcuts, loading shells, toasts, rules drawer        |
-| M6 Visual overhaul (3D scene) | 🔵 In progress       | TresJS + light Wii tokens + CRT filter; 6.5 hover/select lift shipped |
-| Post-game & rematch           | ✅ Complete           | Tie-aware `ResultsOverlay`; `returnToLobby` + Rematch / Exit room actions              |
-| Lobby turn timer              | ✅ Complete           | Host sets `submitTimeoutSeconds` (3–60s, default 30) before start                      |
-| E2E playable demo (M5)        | ✅ Complete           | Manual two-browser QA passed (create → join → play → FINISHED, reconnect, rematch)     |
+**Git:** `frontend/new-visuals` — in-progress token + asset work; assets in `frontend/public/` (`Logotype.svg`, `Logo.svg`, `favicon.ico`).
 
+**Next up:** Execute [visual-identity-implementation.md](./visual-identity-implementation.md) phases 1–6.
 
-**Git:** `cursor/m4-frontend-core` — M4 frontend + M6 UX polish + rematch + configurable turn timer; M5 QA signed off.
-
-**Recent work (branch):** UX audit Sprints A–C; `submitDeadline` exposure; tie-aware results; `returnToLobby` / `updateSubmitTimeout` mutations; display-name persistence; HUD last-resolve row; **M5 portfolio demo verified manually**.
-
-**Next up:** **M6.1** (scene shell + table) — first deliverable in the visual overhaul track below. Merge to `main` can happen in parallel once a scene slice is stable.
+**Retired direction:** Wii / Xbox 360 off-white, cyan accent (`#0099cc`), CRT scanlines, value-hue gradients, `boneTierEffects` particles.
 
 ### Remaining gaps (post-M4)
 
@@ -49,7 +35,7 @@ Task tracker for moving from **dev scaffold → playable MVP → portfolio polis
 | pytest-asyncio loop scope            | Deprecation warning — set `asyncio_default_fixture_loop_scope` in pyproject           | Dev hygiene                                              |
 
 
-**Completeness note:** **Playable MVP (M5) met.** ~95% toward portfolio-ready demo; remaining work is M6 polish, merge, and optional Postgres/CI.
+**Completeness note:** **Playable MVP (M5) met.** Remaining portfolio work: **M6.15 visual identity** + optional Postgres/CI.
 
 ---
 
@@ -77,7 +63,7 @@ flowchart LR
 | **M3** GraphQL API    | Queries, mutations, subscriptions         | ✅ Done                                                  |
 | **M4** Frontend core  | Router, session, lobby, game UI           | ✅ Done on branch                                        |
 | **M5** Playable MVP   | Two browsers, full game loop              | ✅ Done (manual QA)                                      |
-| **M6** Polish         | Wii/Balatro 3D scene, motion, 2P showcase | 🔵 **Current focus** — visual overhaul track (6.1–6.12) |
+| **M6** Polish         | 3D scene, motion, UX, **visual identity refresh** | 🔵 **Current focus** — M6.15 warm editorial |
 | **M7** Post-MVP       | Match history, stats, prod profile        | ⬜ Backlog                                               |
 
 
@@ -315,11 +301,94 @@ Portfolio demo checklist from [deployment.md](./deployment.md). **Verified manua
 
 ## M6 — Polish & Showcase Quality
 
-**Creative direction (locked for this track):** Wii / Xbox 360 console vibes — **light-first**, off-white surfaces, subtle CRT scanlines + low-res feel. In-game: **TresJS/Three.js** table with tilted camera, flat 3D cards, fan hand, step-by-step animated resolve (Balatro clarity). **2 players max** for showcase scope. SFX deferred.
+**Creative direction (current):** **Warm editorial** — light body `#FFE7E0`, dark header/text `#7D3623`, bone-tier card solids, `Logotype.svg` on header + home. **No CRT / Wii / cyan accent.**
 
-Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[ux-audit.md](./ux-audit.md)** (Nielsen backlog — UX sprints shipped).
+Reference: [design-tokens.md](./design-tokens.md), [frontend-design.md](./frontend-design.md), [visual-identity-implementation.md](./visual-identity-implementation.md).
 
-> **How to work this section:** Pick the **first unchecked** task in **6.1 → 6.12**. Each task is one reviewable PR/slice. Do not skip ahead on animation orchestration (6.8) until staging zones (6.6) land.
+> **Shipped baseline (do not regress):** select→confirm, motion queue, resolve animations, keyboard shortcuts, 2P showcase, rematch flow.
+
+---
+
+### M6.15 — Visual identity refresh (warm editorial) ← **Current focus**
+
+**Branch:** `frontend/new-visuals`  
+**Supersedes:** M6.12 Wii chrome pass, value-hue gradients, CRT wrapper, cyan accent, `boneTierEffects` particles.
+
+#### 6.15.1 Token foundation
+- [ ] `style.css` — brand + semantic + card-tier tokens ([design-tokens.md](./design-tokens.md))
+- [ ] `@theme` — expose tokens to Tailwind utilities
+- [ ] `cardColors.ts` — `boneTierColor(bones)`; remove hue-band gradients
+- [ ] `scene/tokens.ts` — fallbacks `#FFE7E0` / `#7D3623`
+
+#### 6.15.2 Cards (2D + 3D)
+- [ ] `CardTile.vue` — flat tier background, bold value, light text
+- [ ] `cardAppearance.ts` — solid fills, bump `TEXTURE_VERSION`
+- [ ] Remove `boneTierEffects` / particle shimmer (file deleted)
+- [ ] `CardMesh.vue` — selection rim dark, not cyan
+
+#### 6.15.3 Chrome & assets
+- [ ] `AppShell` — dark header, `/Logotype.svg`, light icon controls
+- [ ] `HomeView` — hero logotype, regular body copy
+- [ ] Buttons/inputs — primary dark fill + light bold text
+- [ ] `favicon.ico` wired in `index.html`
+
+#### 6.15.4 Scene & HUD
+- [ ] Remove `.crt-game` + scanline CSS
+- [ ] Scene clear `#FFE7E0`; warm contact shadow
+- [ ] Retokenize `BonePop`, HUD, overlays
+
+#### 6.15.5 Cleanup
+- [ ] Grep: no `#0099cc`, `--color-card-band-*`, `crt-game`
+- [ ] `npm run build` + visual QA checklist ([visual-identity-implementation.md](./visual-identity-implementation.md))
+
+**M6.15 done when:** Verification checklist passes; product reads as one warm editorial theme end-to-end.
+
+---
+
+### Agent prompt — visual identity refresh
+
+Copy to a new agent session on `frontend/new-visuals`:
+
+```
+You are implementing the BARE BONES visual identity refresh.
+
+READ FIRST (mandatory):
+- .cursor/design-tokens.md
+- .cursor/visual-identity-implementation.md
+- .cursor/frontend-design.md
+
+DESIGN RULES (locked):
+- Brand dark: #7D3623 — header background, body text, primary button fill
+- Brand light: #FFE7E0 — header text, body background, scene/canvas clear
+- Typography: regular (400) body; bold (600–700) headings, CTAs, card values
+- Card BACKGROUND by bones (flat solid, no gradients):
+  7 → #7D3623 | 5 → #3F237D | 3 → #237D62 | 2 → #7D7723 | 1 → #D29281
+- All card text: #FFE7E0
+- Use /Logotype.svg in AppShell header and HomeView hero (frontend/public/)
+
+RETIRE: Wii/CRT/scanlines, cyan #0099cc, value hue bands, boneTierEffects particles
+
+ORDER: style.css tokens → cardColors.ts → cardAppearance.ts → CardTile → AppShell/Home → GameView (drop crt-game) → scene tokens → HUD/BonePop → grep cleanup → npm run build
+
+CONSTRAINTS: Visual/CSS only — no game logic, GraphQL, or motion queue behavior changes. Preserve a11y + keyboard + reduced-motion.
+
+DONE WHEN: visual-identity-implementation.md verification checklist passes.
+```
+
+---
+
+### Legacy M6 track (3D scene — shipped)
+
+<details>
+<summary>6.0–6.11 completed items (Wii-era tokens — being replaced by 6.15)</summary>
+
+**Original creative direction (retired):** Wii / Xbox 360 light-first, CRT scanlines, cyan accent, value-hue card bands.
+
+- 6.0–6.11: TresJS scene, hand fan, motion queue, resolve animations, bone pop — **shipped**
+- 6.12 Wii chrome pass — **superseded by M6.15**
+- 6.13 Accessibility bridge — fold into 6.15.5 QA
+
+</details>
 
 ---
 
@@ -548,27 +617,15 @@ Reference: [frontend-design.md](./frontend-design.md) (needs token refresh), **[
 
 ---
 
-### 6.12 — Chrome & lobby light pass
+### 6.12 — Chrome & lobby light pass *(superseded by M6.15)*
 
-**Deliverable:** Shell screens match Wii light aesthetic; game HUD floats over CRT viewport.
-
-- `AppShell`, Home, Lobby — off-white panels, soft borders, cyan CTAs (replace amber-dark assumptions)
-- `GameHudBar` / `PlayerStrip` — compact, semi-transparent over scene
-- `ResultsOverlay` — score count-up (400ms) + light theme; keep rematch flow
-- `MobileDesktopNotice` copy still accurate
-
-**Review checkpoint:** Full flow Home → Lobby → Play → Results feels one product, not two themes.
+~~Wii light aesthetic + cyan CTAs~~ → replaced by warm editorial tokens + Logotype.
 
 ---
 
 ### 6.13 — Accessibility & input bridge
 
-**Deliverable:** 3D visuals do not regress keyboard-first UX from shipped M6.
-
-- `1`–`N` + Enter still submit; lifted card tracks keyboard focus
-- `aria-pressed` / `aria-disabled` on confirm bar + hidden list of hand cards (sr-only mirror if needed)
-- Toast `role="status"` / `role="alert"` audit
-- Contrast check on light theme card faces (WCAG AA)
+Fold into **M6.15.5** — contrast check on new tier face colors (WCAG AA).
 
 ---
 
@@ -615,14 +672,15 @@ Not required for portfolio demo. Track here; implement when M5–M6 are stable.
 | **S4** | M3                 | ✅ Done             | GraphQL API + subscription demo in playground     |
 | **S5** | M4.1–4.5           | ✅ Done on branch   | Router, session, Home/Lobby/Game wired to GraphQL |
 | **S6** | M5 QA + fixes      | ✅ Done             | Two-browser MVP verified manually                 |
-| **S7** | M6 visual overhaul | 🔵 **In progress** | 6.0 → 6.12 in order (see M6 section)              |
+| **S7** | M6.15 visual identity | 🔵 **In progress** | Warm editorial tokens + Logotype + bone-tier cards |
 | **S8** | M2.7 + M7 picks    | ⬜ Pending          | Postgres persistence + extras                     |
 
 
 **Immediate actions:**
 
-1. **M6.12** — chrome & lobby light pass (Wii shell consistency).
-2. Continue **6.13** in order.
+1. **M6.15.1** — tokenize `style.css` + `cardColors.ts` per [design-tokens.md](./design-tokens.md).
+2. **M6.15.3** — `AppShell` + `HomeView` with `/Logotype.svg`.
+3. Run agent prompt in [M6.15 section](#m615--visual-identity-refresh-warm-editorial--current-focus) or [visual-identity-implementation.md](./visual-identity-implementation.md).
 
 ---
 
@@ -634,7 +692,7 @@ domain (M1) ✅
         └─► graphql resolvers (M3) ✅
               └─► frontend composables + views (M4) ✅
                     └─► MVP demo (M5) ✅
-                          └─► polish (M6) ← YOU ARE HERE
+                          └─► polish (M6) ← M6.15 visual identity
 ```
 
 **Parallelizable now:**

@@ -2,7 +2,7 @@
 
 ## Current scaffold status
 
-**Last reviewed:** 2026-05-23 (`cursor/m4-frontend-core`)
+**Last reviewed:** 2026-09-06 (`frontend/new-visuals`)
 
 | Item | Status |
 |---|---|
@@ -12,7 +12,7 @@
 | `ensureGuestSession` / GraphQL operations | ✅ `useGuestSession` + `operations.ts` |
 | Vue Router | ✅ `src/router/index.ts` — Home, Lobby, Game, Results |
 | `@vueuse/core` | ✅ `useLocalStorage` in SfxToggle |
-| Design system (Inter, Lucide, dark theme) | ✅ M4 baseline (M6 polish pending) |
+| Design system (Inter, Lucide, warm editorial tokens) | 🔵 In refresh — see [design-tokens.md](./design-tokens.md) |
 | `App.vue` | ✅ Router shell; session boot via router guard only |
 
 ## Locked-In Decisions
@@ -190,7 +190,7 @@ Vite plugins in `vite.config.ts`: `@vitejs/plugin-vue`, `@tailwindcss/vite`.
 
 ## Cross-References
 
-- Screen UX, wireframes, design tokens: [frontend-design.md](./frontend-design.md)
+- Screen UX, wireframes, design tokens: [frontend-design.md](./frontend-design.md), [design-tokens.md](./design-tokens.md)
 - Component & composable patterns: [frontend-patterns.md](./frontend-patterns.md)
 - API operations: [graphql-schema.md](./graphql-schema.md)
 - Docker env wiring: [deployment.md](./deployment.md)
